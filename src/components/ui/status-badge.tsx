@@ -9,27 +9,32 @@ export default function StatusBadge({ status, size = 'sm' }: StatusBadgeProps) {
       case 'posted':
         return {
           label: 'Posted',
-          className: 'status-posted'
+          dotColor: 'bg-emerald-500',
+          textColor: 'text-emerald-400'
         };
       case 'scheduled':
         return {
           label: 'Scheduled',
-          className: 'status-scheduled'
+          dotColor: 'bg-amber-500',
+          textColor: 'text-amber-400'
         };
       case 'failed':
         return {
           label: 'Failed',
-          className: 'status-failed'
+          dotColor: 'bg-red-500',
+          textColor: 'text-red-400'
         };
       case 'draft':
         return {
           label: 'Draft',
-          className: 'status-scheduled' // Reuse scheduled styling
+          dotColor: 'bg-blue-500',
+          textColor: 'text-blue-400'
         };
       default:
         return {
           label: status,
-          className: 'status-scheduled'
+          dotColor: 'bg-zinc-500',
+          textColor: 'text-zinc-400'
         };
     }
   };
@@ -38,8 +43,9 @@ export default function StatusBadge({ status, size = 'sm' }: StatusBadgeProps) {
   const sizeClass = size === 'md' ? 'px-3 py-1.5 text-sm' : 'px-2 py-1 text-xs';
 
   return (
-    <span className={`${config.className} ${sizeClass}`}>
-      {config.label}
+    <span className={`inline-flex items-center ${sizeClass} bg-zinc-900 border border-zinc-800 rounded font-mono`}>
+      <span className={`w-2 h-2 ${config.dotColor} rounded-full mr-2`}></span>
+      <span className={config.textColor}>{config.label}</span>
     </span>
   );
 }

@@ -82,10 +82,7 @@ export default function PostsPage() {
 
   if (loading) {
     return (
-      <DashboardLayout 
-        title="Posts" 
-        subtitle="Manage and monitor all your content"
-      >
+      <DashboardLayout title="Posts">
         <div className="p-8">
           <div className="animate-pulse space-y-4">
             <div className="skeleton h-12 w-full rounded-lg"></div>
@@ -99,21 +96,18 @@ export default function PostsPage() {
   }
 
   return (
-    <DashboardLayout 
-      title="Posts" 
-      subtitle={`${filteredPosts.length} posts across all platforms`}
-    >
+    <DashboardLayout title="Posts">
       <div className="p-8 space-y-6">
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-dashboard-text-muted" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-zinc-500" />
             <input
               type="text"
               placeholder="Search posts, clients, or handles..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-dashboard-card border border-dashboard-border rounded-lg text-dashboard-text-primary placeholder-dashboard-text-muted focus:outline-none focus:border-dashboard-accent-bright"
+              className="w-full pl-10 pr-4 py-2 bg-zinc-900 border border-zinc-800 rounded-md text-zinc-50 placeholder-zinc-500 focus:outline-none focus:border-emerald-500"
             />
           </div>
           
@@ -121,7 +115,7 @@ export default function PostsPage() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-2 bg-dashboard-card border border-dashboard-border rounded-lg text-dashboard-text-primary focus:outline-none focus:border-dashboard-accent-bright"
+              className="px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-md text-zinc-50 focus:outline-none focus:border-emerald-500"
             >
               <option value="all">All Status</option>
               {statuses.map(status => (
@@ -134,7 +128,7 @@ export default function PostsPage() {
             <select
               value={platformFilter}
               onChange={(e) => setPlatformFilter(e.target.value)}
-              className="px-3 py-2 bg-dashboard-card border border-dashboard-border rounded-lg text-dashboard-text-primary focus:outline-none focus:border-dashboard-accent-bright"
+              className="px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-md text-zinc-50 focus:outline-none focus:border-emerald-500"
             >
               <option value="all">All Platforms</option>
               {platforms.map(platform => (
@@ -147,37 +141,36 @@ export default function PostsPage() {
         </div>
 
         {/* Posts Table */}
-        <div className="glass-card rounded-xl overflow-hidden">
+        <div className="bg-zinc-900 border border-zinc-800 rounded-md overflow-hidden">
           <div className="overflow-x-auto">
             <table className="data-table">
               <thead>
                 <tr>
-                  <th className="px-6 py-3">Content</th>
-                  <th className="px-6 py-3">Platform</th>
-                  <th className="px-6 py-3">Client</th>
-                  <th className="px-6 py-3">Status</th>
-                  <th className="px-6 py-3">Agent</th>
-                  <th className="px-6 py-3">Created</th>
-                  <th className="px-6 py-3">Actions</th>
+                  <th>Content</th>
+                  <th>Platform</th>
+                  <th>Client</th>
+                  <th>Status</th>
+                  <th>Agent</th>
+                  <th>Created</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredPosts.map((post) => (
                   <>
                     <tr 
-                      key={post.id} 
-                      className="cursor-pointer"
+                      key={post.id}
                       onClick={() => setExpandedPost(
                         expandedPost === post.id ? null : post.id
                       )}
                     >
-                      <td className="px-6 py-4 max-w-md">
+                      <td className="max-w-md">
                         <div className="flex items-start gap-3">
                           <div className="flex-1 min-w-0">
-                            <p className="text-dashboard-text-primary font-medium leading-relaxed">
+                            <p className="text-zinc-50 font-medium leading-relaxed">
                               {truncateContent(post.content)}
                             </p>
-                            <p className="text-sm text-dashboard-text-muted mt-1">
+                            <p className="text-sm text-zinc-400 mt-1 font-mono">
                               {post.handle}
                             </p>
                           </div>
@@ -186,36 +179,36 @@ export default function PostsPage() {
                           )}
                         </div>
                       </td>
-                      <td className="px-6 py-4">
-                        <PlatformBadge platform={post.platform} />
+                      <td>
+                        <PlatformBadge platform={post.platform} showIcon={true} />
                       </td>
-                      <td className="px-6 py-4">
-                        <span className="text-dashboard-text-primary font-medium">
+                      <td>
+                        <span className="text-zinc-50 font-medium">
                           {post.clientName}
                         </span>
                       </td>
-                      <td className="px-6 py-4">
+                      <td>
                         <StatusBadge status={post.status} />
                       </td>
-                      <td className="px-6 py-4">
+                      <td>
                         <div className="flex items-center gap-2">
-                          <User className="w-4 h-4 text-dashboard-text-muted" />
-                          <span className="text-dashboard-text-secondary font-mono text-sm">
+                          <User className="w-4 h-4 text-zinc-500" />
+                          <span className="text-zinc-400 font-mono text-sm">
                             {post.agentId}
                           </span>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
+                      <td>
                         <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4 text-dashboard-text-muted" />
-                          <span className="text-dashboard-text-secondary text-sm">
+                          <Clock className="w-4 h-4 text-zinc-500" />
+                          <span className="text-zinc-400 text-sm font-mono">
                             {formatDate(post.createdAt)}
                           </span>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
-                        <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
-                          <ExternalLink className="w-4 h-4 text-dashboard-text-muted" />
+                      <td>
+                        <button className="p-2 hover:bg-zinc-800/50 rounded-md transition-colors">
+                          <ExternalLink className="w-4 h-4 text-zinc-500" />
                         </button>
                       </td>
                     </tr>
@@ -223,40 +216,40 @@ export default function PostsPage() {
                     {/* Expanded Row */}
                     {expandedPost === post.id && (
                       <tr>
-                        <td colSpan={7} className="px-6 py-4 bg-white/[0.02] border-t border-dashboard-border">
+                        <td colSpan={7} className="bg-zinc-800/20 border-t border-zinc-800">
                           <div className="space-y-4">
                             <div>
-                              <h4 className="text-sm font-medium text-dashboard-text-primary mb-2">
+                              <h4 className="text-sm font-medium text-zinc-50 mb-2 font-mono uppercase tracking-wider">
                                 Full Content
                               </h4>
-                              <p className="text-dashboard-text-secondary leading-relaxed">
+                              <p className="text-zinc-300 leading-relaxed">
                                 {post.content}
                               </p>
                             </div>
                             
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                               <div>
-                                <span className="text-dashboard-text-muted">Account:</span>
-                                <p className="text-dashboard-text-primary font-medium">
+                                <span className="text-zinc-500 font-mono uppercase tracking-wider text-xs">Account:</span>
+                                <p className="text-zinc-50 font-medium">
                                   {post.accountName}
                                 </p>
                               </div>
                               {post.publishedAt && (
                                 <div>
-                                  <span className="text-dashboard-text-muted">Published:</span>
-                                  <p className="text-dashboard-text-primary font-medium">
+                                  <span className="text-zinc-500 font-mono uppercase tracking-wider text-xs">Published:</span>
+                                  <p className="text-zinc-50 font-medium font-mono">
                                     {formatDate(post.publishedAt)}
                                   </p>
                                 </div>
                               )}
                               {post.mediaUrl && (
                                 <div>
-                                  <span className="text-dashboard-text-muted">Media:</span>
+                                  <span className="text-zinc-500 font-mono uppercase tracking-wider text-xs">Media:</span>
                                   <a 
                                     href={post.mediaUrl} 
                                     target="_blank" 
                                     rel="noopener noreferrer"
-                                    className="text-dashboard-accent-bright hover:underline"
+                                    className="text-emerald-500 hover:underline"
                                   >
                                     View Media
                                   </a>
@@ -276,7 +269,7 @@ export default function PostsPage() {
         
         {filteredPosts.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-dashboard-text-muted">
+            <p className="text-zinc-500">
               No posts found matching your criteria.
             </p>
           </div>

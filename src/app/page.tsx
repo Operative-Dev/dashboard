@@ -117,10 +117,7 @@ export default function Dashboard() {
   }
 
   return (
-    <DashboardLayout 
-      title="Mission Control" 
-      subtitle="Real-time insights into your AI posting agents"
-    >
+    <DashboardLayout title="Overview">
       <div className="p-8 space-y-8">
         {/* Metrics Grid */}
         {stats && (
@@ -160,8 +157,8 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Posts Over Time */}
           {charts?.postsOverTime && (
-            <div className="chart-container">
-              <h3 className="text-lg font-semibold text-dashboard-text-primary mb-4 font-display">
+            <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-md">
+              <h3 className="text-lg font-semibold text-zinc-50 mb-4" style={{ fontFamily: 'var(--font-display)' }}>
                 Posts Activity (7 days)
               </h3>
               <div className="h-64">
@@ -170,28 +167,28 @@ export default function Dashboard() {
                     <XAxis 
                       dataKey="date" 
                       tick={{ fill: '#71717a', fontSize: 12 }}
-                      axisLine={false}
+                      axisLine={{ stroke: '#27272a' }}
                       tickLine={false}
                     />
                     <YAxis 
                       tick={{ fill: '#71717a', fontSize: 12 }}
-                      axisLine={false}
+                      axisLine={{ stroke: '#27272a' }}
                       tickLine={false}
                     />
                     <Tooltip 
                       contentStyle={{
-                        backgroundColor: '#111111',
-                        border: '1px solid #1a1a1a',
-                        borderRadius: '8px',
-                        color: '#ffffff'
+                        backgroundColor: '#18181b',
+                        border: '1px solid #27272a',
+                        borderRadius: '6px',
+                        color: '#fafafa'
                       }}
                     />
                     <Line 
                       type="monotone" 
                       dataKey="count" 
-                      stroke="#7c3aed" 
+                      stroke="#10b981" 
                       strokeWidth={2}
-                      dot={{ fill: '#7c3aed', strokeWidth: 2, r: 4 }}
+                      dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
                     />
                   </LineChart>
                 </ResponsiveContainer>
@@ -201,8 +198,8 @@ export default function Dashboard() {
 
           {/* Impressions Over Time */}
           {charts?.impressionsOverTime && (
-            <div className="chart-container">
-              <h3 className="text-lg font-semibold text-dashboard-text-primary mb-4 font-display">
+            <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-md">
+              <h3 className="text-lg font-semibold text-zinc-50 mb-4" style={{ fontFamily: 'var(--font-display)' }}>
                 Impressions (7 days)
               </h3>
               <div className="h-64">
@@ -211,30 +208,30 @@ export default function Dashboard() {
                     <XAxis 
                       dataKey="date" 
                       tick={{ fill: '#71717a', fontSize: 12 }}
-                      axisLine={false}
+                      axisLine={{ stroke: '#27272a' }}
                       tickLine={false}
                     />
                     <YAxis 
                       tick={{ fill: '#71717a', fontSize: 12 }}
-                      axisLine={false}
+                      axisLine={{ stroke: '#27272a' }}
                       tickLine={false}
                       tickFormatter={formatNumber}
                     />
                     <Tooltip 
                       contentStyle={{
-                        backgroundColor: '#111111',
-                        border: '1px solid #1a1a1a',
-                        borderRadius: '8px',
-                        color: '#ffffff'
+                        backgroundColor: '#18181b',
+                        border: '1px solid #27272a',
+                        borderRadius: '6px',
+                        color: '#fafafa'
                       }}
                       formatter={[formatNumber, 'Impressions']}
                     />
                     <Line 
                       type="monotone" 
                       dataKey="impressions" 
-                      stroke="#059669" 
+                      stroke="#10b981" 
                       strokeWidth={2}
-                      dot={{ fill: '#059669', strokeWidth: 2, r: 4 }}
+                      dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
                     />
                   </LineChart>
                 </ResponsiveContainer>
@@ -244,41 +241,34 @@ export default function Dashboard() {
         </div>
 
         {/* Recent Posts Feed */}
-        <div className="glass-card rounded-xl p-6">
-          <h3 className="text-lg font-semibold text-dashboard-text-primary mb-6 font-display">
+        <div className="bg-zinc-900 border border-zinc-800 rounded-md p-6">
+          <h3 className="text-lg font-semibold text-zinc-50 mb-6" style={{ fontFamily: 'var(--font-display)' }}>
             Recent Posts
           </h3>
-          <div className="space-y-4">
+          <div className="space-y-1">
             {posts.map((post) => (
               <div 
                 key={post.id} 
-                className="flex items-start gap-4 p-4 rounded-lg border border-dashboard-border hover:bg-white/5 transition-colors"
+                className="flex items-center gap-4 p-4 hover:bg-zinc-800/50 transition-colors cursor-pointer rounded border-b border-zinc-800 last:border-b-0"
               >
+                <div className="flex items-center gap-2 w-16">
+                  <PlatformBadge platform={post.platform} size="sm" showIcon={true} />
+                </div>
+                <div className="flex items-center gap-2 w-32">
+                  <span className="text-sm text-zinc-400 font-mono truncate">
+                    {post.handle}
+                  </span>
+                </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-2">
-                    <PlatformBadge platform={post.platform} size="sm" />
-                    <span className="text-sm text-dashboard-text-muted">
-                      {post.handle}
-                    </span>
-                    <span className="text-sm text-dashboard-text-muted">•</span>
-                    <span className="text-sm text-dashboard-text-muted">
-                      {post.clientName}
-                    </span>
-                  </div>
-                  <p className="text-dashboard-text-primary text-sm mb-2 leading-relaxed">
+                  <p className="text-zinc-50 text-sm truncate">
                     {truncateContent(post.content)}
                   </p>
-                  <div className="flex items-center gap-3 text-xs text-dashboard-text-muted">
-                    <span>{formatDate(post.createdAt)}</span>
-                    <span>•</span>
-                    <span className="flex items-center gap-1">
-                      <Activity className="w-3 h-3" />
-                      {post.agentId}
-                    </span>
-                  </div>
                 </div>
-                <div className="flex flex-col items-end gap-2">
+                <div className="flex items-center gap-3">
                   <StatusBadge status={post.status} />
+                  <span className="text-xs text-zinc-500 font-mono w-20 text-right">
+                    {formatDate(post.createdAt)}
+                  </span>
                 </div>
               </div>
             ))}

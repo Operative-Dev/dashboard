@@ -4,6 +4,7 @@ interface PlatformBadgeProps {
   platform: string;
   size?: 'sm' | 'md';
   showIcon?: boolean;
+  showLabel?: boolean;
 }
 
 const getPlatformConfig = (platform: string) => {
@@ -12,34 +13,34 @@ const getPlatformConfig = (platform: string) => {
   switch (normalized) {
     case 'tiktok':
       return {
-        label: 'TikTok',
+        label: 'TK',
         icon: Music,
-        className: 'platform-tiktok'
+        color: 'text-zinc-400'
       };
     case 'twitter':
     case 'x':
       return {
         label: 'X',
         icon: Twitter,
-        className: 'platform-twitter'
+        color: 'text-zinc-400'
       };
     case 'linkedin':
       return {
-        label: 'LinkedIn',
+        label: 'LI',
         icon: Linkedin,
-        className: 'platform-linkedin'
+        color: 'text-zinc-400'
       };
     case 'instagram':
       return {
-        label: 'Instagram',
+        label: 'IG',
         icon: Instagram,
-        className: 'platform-instagram'
+        color: 'text-zinc-400'
       };
     default:
       return {
-        label: platform,
+        label: platform.substring(0, 2).toUpperCase(),
         icon: Music,
-        className: 'platform-tiktok'
+        color: 'text-zinc-400'
       };
   }
 };
@@ -47,16 +48,19 @@ const getPlatformConfig = (platform: string) => {
 export default function PlatformBadge({ 
   platform, 
   size = 'sm', 
-  showIcon = true 
+  showIcon = true,
+  showLabel = false
 }: PlatformBadgeProps) {
   const config = getPlatformConfig(platform);
   const Icon = config.icon;
-  const sizeClass = size === 'md' ? 'px-3 py-1.5 text-sm' : 'px-2 py-1 text-xs';
+  const iconSize = size === 'md' ? 'w-4 h-4' : 'w-3 h-3';
 
   return (
-    <span className={`${config.className} ${sizeClass} inline-flex items-center gap-1`}>
-      {showIcon && <Icon className="w-3 h-3" />}
-      {config.label}
+    <span className={`inline-flex items-center gap-1 ${config.color}`}>
+      {showIcon && <Icon className={iconSize} />}
+      {showLabel && (
+        <span className="text-xs font-mono">{config.label}</span>
+      )}
     </span>
   );
 }

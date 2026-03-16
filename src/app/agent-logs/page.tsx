@@ -1,8 +1,7 @@
 'use client'
 
 import { Activity, User, CheckCircle, XCircle, Clock, Zap } from 'lucide-react'
-import { motion } from 'framer-motion'
-import { formatDateTime } from '@/lib/utils'
+import DashboardLayout from '@/components/layout/dashboard-layout'
 import db from '@/lib/db'
 
 export default function AgentLogsPage() {
@@ -36,197 +35,188 @@ export default function AgentLogsPage() {
     ORDER BY total_actions DESC
   `).all()
 
+  const formatDateTime = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'success':
-        return <CheckCircle className="w-4 h-4 text-emerald-400" />
+        return <CheckCircle className="w-4 h-4 text-emerald-500" />
       case 'error':
-        return <XCircle className="w-4 h-4 text-red-400" />
+        return <XCircle className="w-4 h-4 text-red-500" />
       default:
-        return <Clock className="w-4 h-4 text-amber-400" />
+        return <Clock className="w-4 h-4 text-amber-500" />
     }
   }
 
   const getActionColor = (action: string) => {
     switch (action) {
       case 'content_generated':
-        return 'text-blue-400 bg-blue-400/10'
+        return 'text-blue-400 bg-zinc-900 border-blue-500/20'
       case 'media_processed':
-        return 'text-purple-400 bg-purple-400/10'
+        return 'text-amber-400 bg-zinc-900 border-amber-500/20'
       case 'scheduled':
-        return 'text-amber-400 bg-amber-400/10'
+        return 'text-amber-400 bg-zinc-900 border-amber-500/20'
       case 'published':
-        return 'text-emerald-400 bg-emerald-400/10'
+        return 'text-emerald-400 bg-zinc-900 border-emerald-500/20'
       case 'metrics_collected':
-        return 'text-cyan-400 bg-cyan-400/10'
+        return 'text-blue-400 bg-zinc-900 border-blue-500/20'
       case 'publishing_failed':
-        return 'text-red-400 bg-red-400/10'
+        return 'text-red-400 bg-zinc-900 border-red-500/20'
       default:
-        return 'text-gray-400 bg-gray-400/10'
+        return 'text-zinc-400 bg-zinc-900 border-zinc-500/20'
     }
   }
 
   return (
-    <div className="p-8 space-y-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold font-display text-gradient mb-2">
-          Agent Logs
-        </h1>
-        <p className="text-gray-400 font-mono">
-          Real-time activity from all autonomous agents
-        </p>
-      </div>
+    <DashboardLayout title="Agent Logs">
+      <div className="p-8 space-y-8">
+        {/* Agent Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          {agentStats.map((agent: any) => {
+            const successRate = ((agent.successful_actions / agent.total_actions) * 100).toFixed(1)
+            
+            return (
+              <div
+                key={agent.agent_id}
+                className="bg-zinc-900 border border-zinc-800 p-6 rounded-md"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-zinc-800 border border-zinc-700 rounded-md flex items-center justify-center">
+                      <User className="w-5 h-5 text-zinc-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-zinc-50 font-semibold font-mono">{agent.agent_id}</h3>
+                      <p className="text-xs text-zinc-400 font-mono">
+                        Last active {formatDateTime(agent.last_activity)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="status-dot active"></div>
+                </div>
 
-      {/* Agent Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        {agentStats.map((agent: any, index) => {
-          const successRate = ((agent.successful_actions / agent.total_actions) * 100).toFixed(1)
-          
-          return (
-            <motion.div
-              key={agent.agent_id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1, duration: 0.4 }}
-              className="glass-card p-6 rounded-xl"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-purple-600/20 to-pink-600/20 border border-purple-500/30 rounded-lg flex items-center justify-center">
-                    <User className="w-5 h-5 text-purple-400" />
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="text-center">
+                    <div className="text-xl font-bold font-mono text-zinc-50">
+                      {agent.total_actions}
+                    </div>
+                    <div className="text-xs text-zinc-500 font-mono uppercase tracking-wider">
+                      Total
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-white font-semibold font-display">{agent.agent_id}</h3>
-                    <p className="text-xs text-gray-400 font-mono">
-                      Last active {formatDateTime(agent.last_activity)}
-                    </p>
+                  <div className="text-center">
+                    <div className="text-xl font-bold font-mono text-emerald-500">
+                      {agent.successful_actions}
+                    </div>
+                    <div className="text-xs text-zinc-500 font-mono uppercase tracking-wider">
+                      Success
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xl font-bold font-mono text-zinc-50">
+                      {successRate}%
+                    </div>
+                    <div className="text-xs text-zinc-500 font-mono uppercase tracking-wider">
+                      Rate
+                    </div>
                   </div>
                 </div>
-                <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
-              </div>
 
-              <div className="grid grid-cols-3 gap-4">
-                <div className="text-center">
-                  <div className="text-xl font-bold font-display text-white">
-                    {agent.total_actions}
+                <div className="mt-4 pt-4 border-t border-zinc-800">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-emerald-400 font-mono">
+                      {agent.successful_actions} successful
+                    </span>
+                    <span className="text-red-400 font-mono">
+                      {agent.failed_actions} failed
+                    </span>
                   </div>
-                  <div className="text-xs text-gray-400 font-mono">
-                    Total Actions
-                  </div>
-                </div>
-                <div className="text-center">
-                  <div className="text-xl font-bold font-display text-emerald-400">
-                    {agent.successful_actions}
-                  </div>
-                  <div className="text-xs text-gray-400 font-mono">
-                    Success
-                  </div>
-                </div>
-                <div className="text-center">
-                  <div className="text-xl font-bold font-display text-white">
-                    {successRate}%
-                  </div>
-                  <div className="text-xs text-gray-400 font-mono">
-                    Success Rate
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-4 pt-4 border-t border-white/10">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-emerald-400 font-mono">
-                    {agent.successful_actions} successful
-                  </span>
-                  <span className="text-red-400 font-mono">
-                    {agent.failed_actions} failed
-                  </span>
                 </div>
               </div>
-            </motion.div>
-          )
-        })}
-      </div>
-
-      {/* Activity Log */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4, duration: 0.4 }}
-        className="glass-card rounded-xl overflow-hidden"
-      >
-        <div className="p-6 border-b border-white/10">
-          <h3 className="text-lg font-semibold font-display text-white mb-1">Recent Activity</h3>
-          <p className="text-sm text-gray-400 font-mono">Live agent actions and status updates</p>
+            )
+          })}
         </div>
 
-        <div className="max-h-[600px] overflow-y-auto">
-          <div className="p-6 space-y-4">
-            {logs.map((log: any, index) => (
-              <motion.div
-                key={log.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.05, duration: 0.3 }}
-                className="flex items-start space-x-4 p-4 glass rounded-lg hover:bg-white/5 transition-colors duration-200"
-              >
-                {/* Status Icon */}
-                <div className="flex-shrink-0 mt-1">
-                  {getStatusIcon(log.status)}
-                </div>
+        {/* Activity Log */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-md overflow-hidden">
+          <div className="p-6 border-b border-zinc-800">
+            <h3 className="text-lg font-semibold text-zinc-50 mb-1" style={{ fontFamily: 'var(--font-display)' }}>
+              Recent Activity
+            </h3>
+          </div>
 
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center space-x-3 mb-2">
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${getActionColor(log.action)}`}>
-                      {log.action.replace('_', ' ')}
-                    </span>
-                    <div className="flex items-center space-x-2 text-xs text-gray-400">
-                      <User className="w-3 h-3" />
-                      <span className="font-mono">{log.agent_id}</span>
-                    </div>
-                    <span className="text-xs text-gray-500 font-mono">
-                      {formatDateTime(log.created_at)}
-                    </span>
+          <div className="max-h-[600px] overflow-y-auto">
+            <div className="p-6 space-y-4">
+              {logs.map((log: any) => (
+                <div
+                  key={log.id}
+                  className="flex items-start space-x-4 p-4 border border-zinc-800 rounded hover:bg-zinc-800/50 transition-colors cursor-pointer"
+                >
+                  {/* Status Icon */}
+                  <div className="flex-shrink-0 mt-1">
+                    {getStatusIcon(log.status)}
                   </div>
 
-                  <p className="text-sm text-gray-300 mb-2">
-                    {log.log}
-                  </p>
-
-                  {log.content && (
-                    <div className="flex items-center space-x-4 text-xs">
-                      <span className="text-gray-400">
-                        Post: {log.content.substring(0, 50)}...
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center space-x-3 mb-2">
+                      <span className={`px-2 py-1 rounded text-xs font-mono border ${getActionColor(log.action)}`}>
+                        {log.action.replace('_', ' ')}
                       </span>
-                      {log.handle && (
-                        <span className="text-purple-400 font-mono">
-                          {log.handle} • {log.platform}
-                        </span>
-                      )}
-                      {log.client_name && (
-                        <span className="text-gray-500">
-                          {log.client_name}
-                        </span>
-                      )}
+                      <div className="flex items-center space-x-2 text-xs text-zinc-400">
+                        <User className="w-3 h-3" />
+                        <span className="font-mono">{log.agent_id}</span>
+                      </div>
+                      <span className="text-xs text-zinc-500 font-mono">
+                        {formatDateTime(log.created_at)}
+                      </span>
                     </div>
-                  )}
-                </div>
 
-                {/* Action indicator */}
-                <div className="flex-shrink-0">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                    log.status === 'success' ? 'bg-emerald-500/20' : 
-                    log.status === 'error' ? 'bg-red-500/20' : 'bg-amber-500/20'
-                  }`}>
-                    <Zap className="w-4 h-4" />
+                    <p className="text-sm text-zinc-300 mb-2">
+                      {log.log}
+                    </p>
+
+                    {log.content && (
+                      <div className="flex items-center space-x-4 text-xs">
+                        <span className="text-zinc-400">
+                          Post: {log.content.substring(0, 50)}...
+                        </span>
+                        {log.handle && (
+                          <span className="text-zinc-400 font-mono">
+                            {log.handle} • {log.platform}
+                          </span>
+                        )}
+                        {log.client_name && (
+                          <span className="text-zinc-500">
+                            {log.client_name}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Action indicator */}
+                  <div className="flex-shrink-0">
+                    <div className={`w-8 h-8 rounded border flex items-center justify-center ${
+                      log.status === 'success' ? 'bg-zinc-900 border-emerald-500/20' : 
+                      log.status === 'error' ? 'bg-zinc-900 border-red-500/20' : 'bg-zinc-900 border-amber-500/20'
+                    }`}>
+                      <Zap className="w-4 h-4 text-zinc-400" />
+                    </div>
                   </div>
                 </div>
-              </motion.div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
-      </motion.div>
-    </div>
+      </div>
+    </DashboardLayout>
   )
 }

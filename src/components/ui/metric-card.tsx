@@ -23,41 +23,41 @@ export default function MetricCard({
   const getChangeColor = () => {
     switch (changeType) {
       case 'positive':
-        return 'text-emerald-400';
+        return 'text-emerald-500';
       case 'negative':
-        return 'text-red-400';
+        return 'text-red-500';
       default:
-        return 'text-dashboard-text-muted';
+        return 'text-zinc-500';
     }
   };
 
   return (
-    <div className={`metric-card ${className}`}>
+    <div className={`bg-zinc-900 border border-zinc-800 p-6 rounded-md ${className}`}>
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <p className="text-dashboard-text-muted text-sm font-medium mb-1">
+          <p className="text-xs uppercase tracking-wider text-zinc-500 font-mono mb-2">
             {title}
           </p>
-          <p className="text-2xl font-bold text-dashboard-text-primary font-mono">
+          <p className="text-3xl font-mono font-semibold text-zinc-50">
             {value}
           </p>
           {(change || subtitle) && (
             <div className="mt-2">
               {change && (
-                <span className={`text-sm font-medium ${getChangeColor()}`}>
+                <span className={`text-sm font-medium font-mono ${getChangeColor()}`}>
                   {change}
                 </span>
               )}
               {subtitle && (
-                <p className="text-xs text-dashboard-text-muted">
+                <p className="text-sm text-zinc-400 mt-1">
                   {subtitle}
                 </p>
               )}
             </div>
           )}
         </div>
-        <div className="bg-white/5 p-2 rounded-lg">
-          <Icon className="w-5 h-5 text-dashboard-text-secondary" />
+        <div className="ml-4">
+          <Icon className="w-5 h-5 text-zinc-600" />
         </div>
       </div>
     </div>
