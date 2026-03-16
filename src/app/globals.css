@@ -1,26 +1,212 @@
-@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --font-display: 'Space Grotesk', system-ui, sans-serif;
+  --font-geist-sans: system-ui, -apple-system, sans-serif;
+  --font-geist-mono: 'JetBrains Mono', Menlo, Monaco, monospace;
+
+  /* Color tokens */
+  --background: 220 10% 4%;
+  --foreground: 0 0% 98%;
+  --card: 220 10% 6%;
+  --card-foreground: 0 0% 98%;
+  --popover: 220 10% 6%;
+  --popover-foreground: 0 0% 98%;
+  --primary: 262 80% 50%;
+  --primary-foreground: 0 0% 98%;
+  --secondary: 220 10% 10%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 220 10% 10%;
+  --muted-foreground: 240 4% 46%;
+  --accent: 220 10% 10%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 220 10% 15%;
+  --input: 220 10% 15%;
+  --ring: 262 80% 50%;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  border-color: hsl(var(--border));
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  color: hsl(var(--foreground));
+  background: hsl(var(--background));
+  font-family: var(--font-geist-sans);
+  overflow-x: hidden;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(220 10% 20%);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(220 10% 30%);
+}
+
+/* Animations */
+@keyframes stagger-fade-in {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.stagger-fade-in {
+  animation: stagger-fade-in 0.6s ease-out forwards;
+}
+
+.stagger-fade-in:nth-child(1) { animation-delay: 0ms; }
+.stagger-fade-in:nth-child(2) { animation-delay: 100ms; }
+.stagger-fade-in:nth-child(3) { animation-delay: 200ms; }
+.stagger-fade-in:nth-child(4) { animation-delay: 300ms; }
+.stagger-fade-in:nth-child(5) { animation-delay: 400ms; }
+.stagger-fade-in:nth-child(6) { animation-delay: 500ms; }
+
+/* Noise texture background */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.03;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cg fill-opacity='.5'%3E%3Cpolygon fill='%23ffffff' points='50 0 60 40 100 50 60 60 50 100 40 60 0 50 40 40'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 100px 100px;
+  z-index: -1;
+}
+
+/* Glassmorphism effects */
+.glass {
+  @apply backdrop-blur-xl bg-white/5 border border-white/10;
+}
+
+.glass-card {
+  @apply backdrop-blur-xl bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10;
+}
+
+/* Status badges */
+.status-posted {
+  @apply inline-flex items-center px-2 py-1 rounded-full text-xs font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/30;
+}
+
+.status-scheduled {
+  @apply inline-flex items-center px-2 py-1 rounded-full text-xs font-mono bg-amber-500/20 text-amber-300 border border-amber-500/30;
+}
+
+.status-failed {
+  @apply inline-flex items-center px-2 py-1 rounded-full text-xs font-mono bg-red-500/20 text-red-300 border border-red-500/30;
+}
+
+/* Platform badges */
+.platform-tiktok {
+  @apply inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-pink-500/20 text-pink-300;
+}
+
+.platform-twitter {
+  @apply inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-500/20 text-blue-300;
+}
+
+.platform-linkedin {
+  @apply inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-cyan-500/20 text-cyan-300;
+}
+
+.platform-instagram {
+  @apply inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-purple-500/20 text-purple-300;
+}
+
+/* Metric cards */
+.metric-card {
+  @apply glass-card p-6 rounded-xl transition-all duration-300 hover:bg-white/8 hover:scale-[1.02] relative overflow-hidden;
+}
+
+.metric-card::before {
+  content: '';
+  @apply absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-100%] transition-transform duration-700;
+}
+
+.metric-card:hover::before {
+  @apply translate-x-[100%];
+}
+
+/* Chart container */
+.chart-container {
+  @apply glass-card p-6 rounded-xl relative;
+}
+
+/* Navigation */
+.nav-item {
+  @apply flex items-center px-4 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-white/10 transition-all duration-200 relative overflow-hidden group;
+}
+
+.nav-item.active {
+  @apply text-white bg-gradient-to-r from-purple-600/30 to-blue-600/30 border border-purple-500/50 shadow-lg shadow-purple-500/10;
+}
+
+.nav-item::before {
+  content: '';
+  @apply absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-purple-500 to-blue-500 scale-y-0 transition-transform duration-300 group-hover:scale-y-100;
+}
+
+.nav-item.active::before {
+  @apply scale-y-100;
+}
+
+/* Data table */
+.data-table {
+  @apply w-full border-collapse;
+}
+
+.data-table th {
+  @apply text-left text-xs font-mono uppercase tracking-wider text-gray-400 pb-3 border-b border-white/10;
+}
+
+.data-table td {
+  @apply py-4 border-b border-white/5 text-sm;
+}
+
+.data-table tr {
+  @apply hover:bg-white/5 transition-colors duration-200;
+}
+
+/* Loading states */
+.skeleton {
+  @apply bg-gradient-to-r from-gray-800/50 via-gray-700/50 to-gray-800/50 bg-[length:200%_100%] animate-pulse;
+  animation: skeleton-loading 2s ease-in-out infinite;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Utility classes */
+.text-gradient {
+  @apply bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent;
 }
