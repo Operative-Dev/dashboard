@@ -1,122 +1,54 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap');
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import "tailwindcss";
 
-:root {
+@theme {
+  --font-sans: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', Menlo, Monaco, monospace;
   --font-display: 'Space Grotesk', system-ui, sans-serif;
-  --font-geist-sans: -apple-system, system-ui, sans-serif;
-  --font-geist-mono: 'JetBrains Mono', Menlo, Monaco, monospace;
 }
 
 body {
   color: #fafafa;
   background: #09090b;
-  font-family: var(--font-geist-sans);
+  font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   overflow-x: hidden;
 }
 
-/* Custom scrollbar - brutalist style */
-::-webkit-scrollbar {
-  width: 8px;
-}
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #52525b; }
 
-::-webkit-scrollbar-track {
-  background: transparent;
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
 }
+.status-dot.active { background: #10b981; }
+.status-dot.warning { background: #f59e0b; }
+.status-dot.error { background: #ef4444; }
+.status-dot.idle { background: #71717a; }
 
-::-webkit-scrollbar-thumb {
-  background: #71717a;
-  border-radius: 0;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #a1a1aa;
-}
-
-/* Data table */
 .data-table {
   width: 100%;
   border-collapse: collapse;
 }
-
 .data-table th {
   text-align: left;
-  font-size: 0.75rem;
-  font-family: var(--font-geist-mono);
+  font-size: 0.6875rem;
+  font-family: 'JetBrains Mono', monospace;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.05em;
   color: #71717a;
   padding: 0.75rem 1rem;
   border-bottom: 1px solid #27272a;
-  background: #09090b;
-  position: sticky;
-  top: 0;
-  z-index: 10;
 }
-
 .data-table td {
-  padding: 1rem;
-  border-bottom: 1px solid #27272a;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #18181b;
   font-size: 0.875rem;
 }
-
-.data-table tr:hover {
-  background: rgba(39, 39, 42, 0.5);
-  cursor: pointer;
-}
-
-/* Skeleton animation - brutalist colors */
-.skeleton {
-  background: linear-gradient(90deg, #27272a, #18181b, #27272a);
-  background-size: 200% 100%;
-  animation: skeleton-loading 2s ease-in-out infinite;
-}
-
-@keyframes skeleton-loading {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
-}
-
-/* Status indicators */
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  display: inline-block;
-  margin-right: 0.5rem;
-}
-
-.status-dot.active {
-  background: #10b981;
-}
-
-.status-dot.draft {
-  background: #3b82f6;
-}
-
-.status-dot.scheduled {
-  background: #f59e0b;
-}
-
-.status-dot.failed {
-  background: #ef4444;
-}
-
-/* Platform icons */
-.platform-icon {
-  width: 16px;
-  height: 16px;
-  display: inline-block;
-  margin-right: 0.5rem;
-}
-
-/* Remove all animations that cause layout shift */
-* {
-  transform: none !important;
-}
+.data-table tr { transition: background 0.15s ease; }
+.data-table tr:hover { background: rgba(39, 39, 42, 0.5); }
