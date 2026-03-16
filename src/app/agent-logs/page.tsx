@@ -1,3 +1,5 @@
+'use client'
+
 import { Activity, User, CheckCircle, XCircle, Clock, Zap } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { formatDateTime } from '@/lib/utils'
