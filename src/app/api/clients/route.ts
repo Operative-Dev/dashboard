@@ -1,56 +1,110 @@
 import { NextResponse } from 'next/server';
-import { initializeDatabase, seedDatabase, getClients, getChannelsByClient, getAccountsByChannel } from '@/lib/db';
-import db from '@/lib/db';
+import { PostBridgeClient } from '@/lib/postbridge';
 
-let dbInitialized = false;
-function ensureDatabase() {
-  if (!dbInitialized) {
-    initializeDatabase();
-    seedDatabase();
-    dbInitialized = true;
-  }
-}
+// Known Woz account IDs from PostBridge
+const WOZ_ACCOUNT_IDS = [47791, 47792, 47793, 47796, 47852];
 
 export async function GET() {
   try {
-    ensureDatabase();
-    const clients = getClients();
+    const { accounts, posts, analytics } = await PostBridgeClient.getAllData();
     
-    const clientsWithDetails = clients.map((client: any) => {
-      const channels = getChannelsByClient(client.id);
-      
-      const channelsWithCounts = channels.map((ch: any) => {
-        const accounts = getAccountsByChannel(ch.id);
-        return { id: ch.id, platform: ch.platform, accountCount: accounts.length };
-      });
-
-      const postCount = db.prepare(`
-        SELECT COUNT(*) as count FROM posts p
-        JOIN accounts a ON p.account_id = a.id
-        JOIN channels c ON a.channel_id = c.id
-        WHERE c.client_id = ?
-      `).get(client.id) as any;
-
-      const impressions = db.prepare(`
-        SELECT COALESCE(SUM(pm.impressions), 0) as total FROM post_metrics pm
-        JOIN posts p ON pm.post_id = p.id
-        JOIN accounts a ON p.account_id = a.id
-        JOIN channels c ON a.channel_id = c.id
-        WHERE c.client_id = ?
-      `).get(client.id) as any;
-      
-      return {
-        id: client.id,
-        name: client.name,
-        status: client.status,
-        created_at: client.created_at,
-        channels: channelsWithCounts,
-        totalPosts: postCount?.count || 0,
-        totalImpressions: impressions?.total || 0,
-      };
-    });
+    // Calculate stats for Woz (real data)
+    const wozPosts = posts.filter(post => 
+      post.social_accounts.some(accountId => WOZ_ACCOUNT_IDS.includes(accountId))
+    );
     
-    return NextResponse.json({ clients: clientsWithDetails });
+    const wozViews = analytics.reduce((sum, item) => sum + (item.view_count || 0), 0);
+    
+    // Find Woz accounts
+    const wozAccounts = accounts.filter(account => WOZ_ACCOUNT_IDS.includes(account.id));
+    
+    const clients = [
+      {
+        id: 'woz-1',
+        name: 'Woz',
+        status: 'active',
+        created_at: '2024-01-01T00:00:00Z',
+        channels: [
+          {
+            id: 'woz-tiktok',
+            platform: 'tiktok',
+            accountCount: wozAccounts.length
+          }
+        ],
+        totalPosts: wozPosts.length,
+        totalImpressions: wozViews,
+        accounts: wozAccounts.map(account => ({
+          id: account.id,
+          username: account.username,
+          platform: account.platform
+        }))
+      },
+      {
+        id: 'personal-1',
+        name: 'Personal Brand',
+        status: 'active',
+        created_at: '2024-01-01T00:00:00Z',
+        channels: [
+          {
+            id: 'personal-linkedin',
+            platform: 'linkedin',
+            accountCount: 0
+          },
+          {
+            id: 'personal-twitter',
+            platform: 'twitter',
+            accountCount: 0
+          }
+        ],
+        totalPosts: 0,
+        totalImpressions: 0,
+        accounts: []
+      },
+      {
+        id: 'novi-1',
+        name: 'Novi',
+        status: 'active',
+        created_at: '2024-01-01T00:00:00Z',
+        channels: [
+          {
+            id: 'novi-tiktok',
+            platform: 'tiktok',
+            accountCount: 0
+          },
+          {
+            id: 'novi-instagram',
+            platform: 'instagram',
+            accountCount: 0
+          }
+        ],
+        totalPosts: 0,
+        totalImpressions: 0,
+        accounts: []
+      },
+      {
+        id: 'mira-1',
+        name: 'Mira',
+        status: 'active',
+        created_at: '2024-01-01T00:00:00Z',
+        channels: [
+          {
+            id: 'mira-tiktok',
+            platform: 'tiktok',
+            accountCount: 0
+          },
+          {
+            id: 'mira-twitter',
+            platform: 'twitter',
+            accountCount: 0
+          }
+        ],
+        totalPosts: 0,
+        totalImpressions: 0,
+        accounts: []
+      }
+    ];
+    
+    return NextResponse.json({ clients });
   } catch (error) {
     console.error('Error fetching clients:', error);
     return NextResponse.json({ error: 'Failed to fetch clients' }, { status: 500 });

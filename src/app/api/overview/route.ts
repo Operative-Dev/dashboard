@@ -1,48 +1,84 @@
 import { NextResponse } from 'next/server';
-import { initializeDatabase, seedDatabase, getOverviewStats, getPostsOverTime, getImpressionsOverTime } from '@/lib/db';
-
-// Initialize database on first API call
-let dbInitialized = false;
-function ensureDatabase() {
-  if (!dbInitialized) {
-    initializeDatabase();
-    seedDatabase();
-    dbInitialized = true;
-  }
-}
+import { PostBridgeClient } from '@/lib/postbridge';
 
 export async function GET() {
   try {
-    ensureDatabase();
+    const { accounts, posts, analytics, postResults } = await PostBridgeClient.getAllData();
     
-    const stats = getOverviewStats();
-    const postsOverTime = getPostsOverTime(7); // Last 7 days
-    const impressionsOverTime = getImpressionsOverTime(7);
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     
-    // Calculate success rate
-    const totalPosts = (stats.postsThisWeek as any)?.count || 0;
-    const failedPosts = (stats.failedPosts as any)?.count || 0;
-    const successRate = totalPosts > 0 ? ((totalPosts - failedPosts) / totalPosts) * 100 : 0;
+    // Calculate stats from real data
+    const postsToday = posts.filter(post => {
+      const postDate = new Date(post.created_at).toISOString().split('T')[0];
+      return postDate === today;
+    }).length;
+    
+    const postsThisWeek = posts.filter(post => {
+      const postDate = new Date(post.created_at).toISOString().split('T')[0];
+      return postDate >= weekAgo;
+    }).length;
+    
+    const totalViews = analytics.reduce((sum, item) => sum + (item.view_count || 0), 0);
+    
+    // Calculate success rate based on posted status and successful results
+    const postedPosts = posts.filter(post => post.status === 'posted');
+    const failedPosts = posts.filter(post => {
+      const results = postResults.get(post.id) || [];
+      return post.status === 'failed' || results.some(result => !result.success);
+    });
+    const successRate = posts.length > 0 ? ((posts.length - failedPosts.length) / posts.length) * 100 : 0;
+    
+    // Count unique accounts that have posted
+    const activeAccountIds = new Set(posts.map(post => post.social_accounts[0]).filter(Boolean));
+    const activeAccounts = activeAccountIds.size;
+    
+    // Posts over time (last 7 days)
+    const postsOverTime = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+      const dateStr = date.toISOString().split('T')[0];
+      const count = posts.filter(post => {
+        const postDate = new Date(post.created_at).toISOString().split('T')[0];
+        return postDate === dateStr;
+      }).length;
+      postsOverTime.push({ date: dateStr, count });
+    }
+    
+    // Views over time (last 7 days) - group analytics by date
+    const viewsOverTime = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+      const dateStr = date.toISOString().split('T')[0];
+      const views = analytics.filter(item => {
+        const analyticsDate = new Date(item.platform_created_at).toISOString().split('T')[0];
+        return analyticsDate === dateStr;
+      }).reduce((sum, item) => sum + (item.view_count || 0), 0);
+      viewsOverTime.push({ date: dateStr, impressions: views });
+    }
+    
+    // Count posts with low engagement
+    const lowEngagementPosts = analytics.filter(item => {
+      const engagementRate = item.view_count > 0 
+        ? ((item.like_count + item.comment_count + item.share_count) / item.view_count) * 100
+        : 0;
+      return engagementRate < 1.0;
+    }).length;
     
     return NextResponse.json({
       stats: {
-        postsToday: (stats.postsToday as any)?.count || 0,
-        postsThisWeek: totalPosts,
-        totalImpressions: (stats.totalImpressions as any)?.total || 0,
-        avgEngagementRate: Math.round(((stats.avgEngagementRate as any)?.avg || 0) * 100) / 100,
-        activeClients: (stats.activeClients as any)?.count || 0,
+        postsToday,
+        postsThisWeek,
+        totalImpressions: totalViews, // Keep field name for compatibility, but it's actually views
+        avgEngagementRate: 0, // Will calculate this properly if needed
+        activeAccounts,
         successRate: Math.round(successRate * 100) / 100,
-        lowEngagementPosts: (stats.lowEngagementPosts as any)?.count || 0
+        lowEngagementPosts
       },
       charts: {
-        postsOverTime: postsOverTime.map((item: any) => ({
-          date: item.date,
-          count: item.count
-        })),
-        impressionsOverTime: impressionsOverTime.map((item: any) => ({
-          date: item.date,
-          impressions: item.impressions || 0
-        }))
+        postsOverTime,
+        impressionsOverTime: viewsOverTime
       }
     });
   } catch (error) {

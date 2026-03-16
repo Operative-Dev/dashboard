@@ -130,7 +130,7 @@ export default function Dashboard() {
               changeType="positive"
             />
             <MetricCard
-              title="Total Impressions"
+              title="Total Views"
               value={formatNumber(stats.totalImpressions)}
               subtitle="Across all platforms"
               icon={Eye}
@@ -200,7 +200,7 @@ export default function Dashboard() {
           {charts?.impressionsOverTime && (
             <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-md">
               <h3 className="text-lg font-semibold text-zinc-50 mb-4" style={{ fontFamily: 'var(--font-display)' }}>
-                Impressions (7 days)
+                Views (7 days)
               </h3>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
@@ -224,7 +224,7 @@ export default function Dashboard() {
                         borderRadius: '6px',
                         color: '#fafafa'
                       }}
-                      formatter={[formatNumber, 'Impressions']}
+                      formatter={[formatNumber, 'Views']}
                     />
                     <Line 
                       type="monotone" 

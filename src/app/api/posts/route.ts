@@ -1,19 +1,68 @@
-import { NextResponse } from 'next/server'
-import { getPosts } from '@/lib/db'
+import { NextResponse } from 'next/server';
+import { PostBridgeClient } from '@/lib/postbridge';
 
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url)
-    const limit = searchParams.get('limit')
+    const { searchParams } = new URL(request.url);
+    const limit = searchParams.get('limit');
     
-    const posts = getPosts(limit ? parseInt(limit) : 50)
+    const { accounts, posts, analytics, postResults } = await PostBridgeClient.getAllData();
     
-    return NextResponse.json({ posts })
+    // Create account lookup map
+    const accountsMap = new Map();
+    accounts.forEach(account => {
+      accountsMap.set(account.id, account);
+    });
+    
+    // Create analytics lookup map by platform_post_id
+    const analyticsMap = new Map();
+    analytics.forEach(item => {
+      analyticsMap.set(item.platform_post_id, item);
+    });
+    
+    // Transform posts to match the expected format
+    const transformedPosts = posts
+      .slice(0, limit ? parseInt(limit) : 50)
+      .map(post => {
+        const account = accountsMap.get(post.social_accounts[0]);
+        const analyticsData = analyticsMap.get(post.id.toString());
+        const results = postResults.get(post.id) || [];
+        
+        return {
+          id: post.id.toString(),
+          account_id: post.social_accounts[0]?.toString() || '',
+          content: post.caption,
+          media_url: post.media && post.media.length > 0 ? post.media[0].url || null : null,
+          status: post.status,
+          created_at: post.created_at,
+          published_at: post.status === 'posted' ? post.created_at : null,
+          agent_id: 'Agent', // Default agent name
+          handle: account ? `@${account.username}` : '@unknown',
+          account_name: account ? account.username : 'Unknown',
+          platform: account ? account.platform : 'tiktok',
+          client_name: 'Woz', // All current accounts belong to Woz
+          // Analytics data
+          impressions: analyticsData?.view_count || 0,
+          likes: analyticsData?.like_count || 0,
+          comments: analyticsData?.comment_count || 0,
+          shares: analyticsData?.share_count || 0,
+          engagement_rate: analyticsData ? 
+            (analyticsData.view_count > 0 
+              ? ((analyticsData.like_count + analyticsData.comment_count + analyticsData.share_count) / analyticsData.view_count) * 100
+              : 0) 
+            : 0,
+          // Additional metadata
+          is_draft: post.is_draft,
+          has_failed_results: results.some(result => !result.success)
+        };
+      });
+    
+    return NextResponse.json({ posts: transformedPosts });
   } catch (error) {
-    console.error('Error fetching posts:', error)
+    console.error('Error fetching posts:', error);
     return NextResponse.json(
       { error: 'Failed to fetch posts' },
       { status: 500 }
-    )
+    );
   }
 }
