@@ -68,7 +68,7 @@ export async function GET(request: Request) {
     // Calculate success rate based on posted status and successful results
     const postedPosts = filteredPosts.filter(post => post.status === 'posted');
     const failedPosts = filteredPosts.filter(post => {
-      const results = postResults.get(post.id) || [];
+      const results = postResults.get(post.id.toString()) || [];
       return post.status === 'failed' || results.some((result: any) => !result.success);
     });
     const successRate = filteredPosts.length > 0 ? ((filteredPosts.length - failedPosts.length) / filteredPosts.length) * 100 : 0;

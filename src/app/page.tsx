@@ -29,6 +29,9 @@ interface OverviewStats {
   activeAccounts: number;
   successRate: number;
   lowEngagementPosts: number;
+  queuedToday: number;
+  totalQueued: number;
+  totalLive: number;
 }
 
 interface Post {

@@ -29,7 +29,7 @@ export async function GET(request: Request) {
     
     // Failed posts - filtered posts with failed results or failed status
     const failedPosts = filteredPosts.filter(post => {
-      const results = postResults.get(post.id) || [];
+      const results = postResults.get(post.id.toString()) || [];
       return post.status === 'failed' || results.some((result: any) => !result.success);
     }).map(post => {
       const account = accountsMap.get(post.social_accounts[0]);

@@ -55,7 +55,7 @@ export async function GET(request: Request) {
       .slice(0, limit ? parseInt(limit) : 100)
       .map(post => {
         const account = accountsMap.get(post.social_accounts[0]);
-        const results = postResults.get(post.id) || [];
+        const results = postResults.get(post.id.toString()) || [];
         
         // Strategy 1: match via post_result_id
         let analyticsData: typeof analytics[0] | null = null;
