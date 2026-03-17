@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Fragment } from 'react';
+import { useState, useEffect, Fragment, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/components/layout/dashboard-layout';
 import StatusBadge from '@/components/ui/status-badge';
@@ -27,7 +27,7 @@ interface Post {
   engagement_rate: number;
 }
 
-export default function PostsPage() {
+function PostsContent() {
   const searchParams = useSearchParams();
   const currentCompany = searchParams.get('company') || 'all';
   const [posts, setPosts] = useState<Post[]>([]);

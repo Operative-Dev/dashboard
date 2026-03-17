@@ -146,3 +146,15 @@ function NeedsAttentionContent() {
     </DashboardLayout>
   )
 }
+
+export default function NeedsAttentionPage() {
+  return (
+    <Suspense fallback={
+      <DashboardLayout title="Needs Attention">
+        <div className="p-8"><div className="text-zinc-500 font-mono text-sm">Loading...</div></div>
+      </DashboardLayout>
+    }>
+      <NeedsAttentionContent />
+    </Suspense>
+  )
+}
