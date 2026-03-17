@@ -68,14 +68,15 @@ function DashboardContent() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [fetchedAt, setFetchedAt] = useState<string | null>(null);
+  const [timePeriod, setTimePeriod] = useState(7);
 
   const fetchData = async (fresh = false) => {
     try {
       const freshParam = fresh ? '&fresh=1' : '';
       const sep = currentCompany === 'all' ? '?' : '&';
       const overviewUrl = currentCompany === 'all' 
-        ? `/api/overview${fresh ? '?fresh=1' : ''}` 
-        : `/api/overview?company=${currentCompany}${freshParam}`;
+        ? `/api/overview?days=${timePeriod}${fresh ? '&fresh=1' : ''}` 
+        : `/api/overview?company=${currentCompany}&days=${timePeriod}${freshParam}`;
       const postsUrl = currentCompany === 'all' 
         ? `/api/posts?limit=20${freshParam}` 
         : `/api/posts?limit=20&company=${currentCompany}${freshParam}`;
@@ -96,7 +97,7 @@ function DashboardContent() {
     }
   };
 
-  useEffect(() => { fetchData(); }, [currentCompany]);
+  useEffect(() => { fetchData(); }, [currentCompany, timePeriod]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -271,13 +272,30 @@ function DashboardContent() {
           </div>
         )}
 
+        {/* Time period toggle */}
+        <div className="flex items-center gap-1">
+          {[7, 14, 30].map(d => (
+            <button
+              key={d}
+              onClick={() => setTimePeriod(d)}
+              className={`px-3 py-1.5 text-xs font-mono rounded-md cursor-pointer transition-colors ${
+                timePeriod === d
+                  ? 'bg-zinc-800 text-zinc-50 border border-zinc-700'
+                  : 'text-zinc-500 hover:text-zinc-300 border border-transparent'
+              }`}
+            >
+              {d}d
+            </button>
+          ))}
+        </div>
+
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Posts Over Time */}
           {charts?.postsOverTime && (
             <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-md">
               <h3 className="text-lg font-semibold text-zinc-50 mb-4" style={{ fontFamily: 'var(--font-display)' }}>
-                Posts Activity (7 days)
+                Posts Activity ({timePeriod}d)
               </h3>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
@@ -318,7 +336,7 @@ function DashboardContent() {
           {charts?.impressionsOverTime && (
             <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-md">
               <h3 className="text-lg font-semibold text-zinc-50 mb-4" style={{ fontFamily: 'var(--font-display)' }}>
-                Views (7 days)
+                Views ({timePeriod}d)
               </h3>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">

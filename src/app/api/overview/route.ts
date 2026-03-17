@@ -7,6 +7,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const companySlug = searchParams.get('company') || 'all';
     const fresh = searchParams.get('fresh') === '1';
+    const days = parseInt(searchParams.get('days') || '7');
     const companyAccountIds = getCompanyAccountIds(companySlug);
     
     const { accounts, posts, analytics, postResults, fetchedAt } = await PostBridgeClient.getAllData(fresh);
@@ -55,9 +56,9 @@ export async function GET(request: Request) {
       : new Set(filteredPosts.map(post => post.social_accounts[0]).filter(id => companyAccountIds.includes(id)));
     const activeAccounts = filteredAccountIds.size;
     
-    // Posts over time (last 7 days) - filtered
+    // Posts over time - filtered
     const postsOverTime = [];
-    for (let i = 6; i >= 0; i--) {
+    for (let i = days - 1; i >= 0; i--) {
       const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
       const dateStr = date.toISOString().split('T')[0];
       const count = filteredPosts.filter(post => {
@@ -67,9 +68,9 @@ export async function GET(request: Request) {
       postsOverTime.push({ date: dateStr, count });
     }
     
-    // Views over time (last 7 days) - filtered analytics
+    // Views over time - filtered analytics
     const viewsOverTime = [];
-    for (let i = 6; i >= 0; i--) {
+    for (let i = days - 1; i >= 0; i--) {
       const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
       const dateStr = date.toISOString().split('T')[0];
       const views = filteredAnalytics.filter(item => {
