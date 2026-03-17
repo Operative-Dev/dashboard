@@ -111,10 +111,13 @@ export async function GET(request: Request) {
       return engagementRate < 1.0;
     }).length;
 
-    // Company summaries (only when viewing all companies)
+    // Company summaries — all companies when viewing "all", or just the selected one
     let companySummaries: any[] = [];
-    if (companySlug === 'all') {
-      companySummaries = companies.map(company => {
+    const companiesToSummarize = companySlug === 'all' 
+      ? companies 
+      : companies.filter(c => c.slug === companySlug);
+    if (companiesToSummarize.length > 0) {
+      companySummaries = companiesToSummarize.map(company => {
         const companyPosts = posts.filter(post => 
           post.social_accounts.some(accountId => company.postbridgeAccountIds.includes(accountId))
         );

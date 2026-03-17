@@ -331,7 +331,7 @@ function DashboardContent() {
         )}
 
         {/* Company Summaries (only when viewing all companies) */}
-        {currentCompany === 'all' && companySummaries.length > 0 && (
+        {companySummaries.length > 0 && (
           <div className="bg-zinc-900 border border-zinc-800 rounded-md p-6">
             <h3 className="text-lg font-semibold text-zinc-50 mb-6" style={{ fontFamily: 'var(--font-display)' }}>
               Company Overview
