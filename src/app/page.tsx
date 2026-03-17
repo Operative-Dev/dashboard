@@ -32,10 +32,11 @@ interface Post {
   content: string;
   handle: string;
   platform: string;
-  clientName: string;
+  client_name: string;
   status: 'posted' | 'scheduled' | 'failed' | 'draft';
-  createdAt: string;
-  agentId: string;
+  created_at: string;
+  agent_id: string;
+  tiktok_url: string | null;
 }
 
 interface ChartData {
@@ -83,7 +84,10 @@ export default function Dashboard() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    if (!dateString) return '—';
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return '—';
+    return d.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
@@ -267,7 +271,7 @@ export default function Dashboard() {
                 <div className="flex items-center gap-3">
                   <StatusBadge status={post.status} />
                   <span className="text-xs text-zinc-500 font-mono w-20 text-right">
-                    {formatDate(post.createdAt)}
+                    {formatDate(post.created_at)}
                   </span>
                 </div>
               </div>
