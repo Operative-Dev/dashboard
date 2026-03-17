@@ -1,0 +1,52 @@
+export interface Company {
+  id: string;
+  name: string;
+  slug: string;
+  postbridgeAccountIds: number[]; // PostBridge account IDs belonging to this company
+  platforms: string[];
+  color: string; // accent color for the company
+  status: 'active' | 'onboarding' | 'paused';
+}
+
+export const companies: Company[] = [
+  {
+    id: 'woz',
+    name: 'Woz',
+    slug: 'woz',
+    postbridgeAccountIds: [47791, 47792, 47793, 47796, 47852],
+    platforms: ['tiktok'],
+    color: '#10b981', // emerald
+    status: 'active',
+  },
+  {
+    id: 'novi',
+    name: 'Novi',
+    slug: 'novi',
+    postbridgeAccountIds: [], // not on PostBridge yet
+    platforms: ['tiktok', 'instagram'],
+    color: '#3b82f6', // blue
+    status: 'onboarding',
+  },
+  {
+    id: 'thoughtful',
+    name: 'Thoughtful',
+    slug: 'thoughtful',
+    postbridgeAccountIds: [], // not on PostBridge yet
+    platforms: ['tiktok', 'instagram'],
+    color: '#f59e0b', // amber
+    status: 'onboarding',
+  },
+];
+
+export function getCompanyBySlug(slug: string): Company | null {
+  return companies.find(company => company.slug === slug) || null;
+}
+
+export function getCompanyAccountIds(companySlug: string): number[] {
+  if (companySlug === 'all') {
+    return companies.flatMap(company => company.postbridgeAccountIds);
+  }
+  
+  const company = getCompanyBySlug(companySlug);
+  return company ? company.postbridgeAccountIds : [];
+}

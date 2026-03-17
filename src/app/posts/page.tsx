@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import DashboardLayout from '@/components/layout/dashboard-layout';
 import StatusBadge from '@/components/ui/status-badge';
 import PlatformBadge from '@/components/ui/platform-badge';
@@ -105,9 +105,8 @@ export default function PostsPage() {
             </thead>
             <tbody>
               {filtered.map(post => (
-                <>
+                <Fragment key={post.id}>
                   <tr
-                    key={post.id}
                     onClick={() => setExpandedPost(expandedPost === post.id ? null : post.id)}
                     className="cursor-pointer"
                   >
@@ -155,7 +154,7 @@ export default function PostsPage() {
                   </tr>
 
                   {expandedPost === post.id && (
-                    <tr key={`${post.id}-expanded`}>
+                    <tr>
                       <td colSpan={7} className="bg-zinc-800/20 border-t border-zinc-800">
                         <div className="space-y-4">
                           <div>
@@ -190,7 +189,7 @@ export default function PostsPage() {
                       </td>
                     </tr>
                   )}
-                </>
+                </Fragment>
               ))}
             </tbody>
           </table>
