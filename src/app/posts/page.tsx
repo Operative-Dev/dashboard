@@ -15,7 +15,7 @@ interface Post {
   account_name: string;
   platform: string;
   client_name: string;
-  status: string;
+  status: 'posted' | 'scheduled' | 'failed' | 'draft';
   agent_id: string;
   created_at: string;
   published_at: string | null;
@@ -64,14 +64,14 @@ export default function PostsPage() {
   const truncate = (s: string, n = 90) => s.length <= n ? s : s.substring(0, n) + '...';
 
   if (loading) {
-    return <DashboardLayout title="Posts"><div className="p-8 text-zinc-500 font-mono text-sm">Loading...</div></DashboardLayout>;
+    return <DashboardLayout title="Posts"><div className="p-4 md:p-8 text-zinc-500 font-mono text-sm">Loading...</div></DashboardLayout>;
   }
 
   // Show empty state for companies without PostBridge data
   if (hasNoPostBridgeData) {
     return (
       <DashboardLayout title={`Posts - ${company?.name}`}>
-        <div className="p-8">
+        <div className="p-4 md:p-8">
           <div className="bg-zinc-900 border border-zinc-800 rounded-md p-8 text-center">
             <div className="flex flex-col items-center space-y-4">
               <div 
@@ -107,9 +107,9 @@ export default function PostsPage() {
 
   return (
     <DashboardLayout title={pageTitle}>
-      <div className="p-8 space-y-6">
+      <div className="p-4 md:p-8 space-y-6">
         {/* Filters */}
-        <div className="flex gap-4">
+        <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
             <input
@@ -136,8 +136,8 @@ export default function PostsPage() {
         <div className="text-xs text-zinc-500 font-mono">{filtered.length} posts</div>
 
         {/* Posts Table */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-md overflow-hidden">
-          <table className="data-table">
+        <div className="bg-zinc-900 border border-zinc-800 rounded-md overflow-x-auto">
+          <table className="data-table min-w-[700px]">
             <thead>
               <tr>
                 <th>Content</th>

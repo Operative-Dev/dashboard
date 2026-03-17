@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { AlertTriangle, TrendingDown, XCircle, Clock } from 'lucide-react'
 import DashboardLayout from '@/components/layout/dashboard-layout'
@@ -8,7 +8,7 @@ import StatusBadge from '@/components/ui/status-badge'
 import PlatformBadge from '@/components/ui/platform-badge'
 import { getCompanyBySlug } from '@/lib/companies'
 
-export default function NeedsAttentionPage() {
+function NeedsAttentionContent() {
   const searchParams = useSearchParams()
   const currentCompany = searchParams.get('company') || 'all'
   const [failedPosts, setFailedPosts] = useState<any[]>([])
@@ -42,14 +42,14 @@ export default function NeedsAttentionPage() {
   const pageTitle = currentCompany === 'all' ? 'Needs Attention' : `Needs Attention - ${company?.name}`
 
   if (loading) {
-    return <DashboardLayout title={pageTitle}><div className="p-8"><div className="text-zinc-500 font-mono text-sm">Loading...</div></div></DashboardLayout>
+    return <DashboardLayout title={pageTitle}><div className="p-4 md:p-8"><div className="text-zinc-500 font-mono text-sm">Loading...</div></div></DashboardLayout>
   }
 
   // Show empty state for companies without PostBridge data
   if (hasNoPostBridgeData) {
     return (
       <DashboardLayout title={pageTitle}>
-        <div className="p-8">
+        <div className="p-4 md:p-8">
           <div className="bg-zinc-900 border border-zinc-800 rounded-md p-8 text-center">
             <div className="flex flex-col items-center space-y-4">
               <div 
@@ -80,7 +80,7 @@ export default function NeedsAttentionPage() {
 
   return (
     <DashboardLayout title={pageTitle}>
-      <div className="p-8 space-y-8">
+      <div className="p-4 md:p-8 space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-zinc-900 border border-zinc-800 border-l-4 border-l-red-500 p-6 rounded-md">
             <div className="flex items-center justify-between mb-4">

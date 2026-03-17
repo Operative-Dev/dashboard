@@ -125,7 +125,7 @@ export default function Dashboard() {
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="p-8">
+        <div className="p-4 md:p-8">
           <div className="animate-pulse space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
               {[...Array(4)].map((_, i) => (
@@ -144,7 +144,7 @@ export default function Dashboard() {
 
   return (
     <DashboardLayout title="Overview">
-      <div className="p-8 space-y-8">
+      <div className="p-4 md:p-8 space-y-8">
         {/* Metrics Grid */}
         {stats && (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
@@ -313,7 +313,7 @@ export default function Dashboard() {
                         borderRadius: '6px',
                         color: '#fafafa'
                       }}
-                      formatter={[formatNumber, 'Views']}
+                      formatter={(value) => [formatNumber(Number(value)), 'Views']}
                     />
                     <Line 
                       type="monotone" 

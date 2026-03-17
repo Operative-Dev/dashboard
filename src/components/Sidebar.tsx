@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { usePathname, useSearchParams, useRouter } from 'next/navigation'
-import { LayoutDashboard, FileText, AlertTriangle } from 'lucide-react'
-import { companies, type Company } from '@/lib/companies'
+import { usePathname } from 'next/navigation'
+import { LayoutDashboard, FileText, AlertTriangle, Menu, X } from 'lucide-react'
 
 const navItems = [
   { href: '/', label: 'Overview', icon: <LayoutDashboard className="w-4 h-4" /> },
@@ -14,107 +13,41 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname()
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const currentCompany = searchParams.get('company') || 'all'
   const [postCount, setPostCount] = useState<number | null>(null)
+  const [open, setOpen] = useState(false)
 
   useEffect(() => {
-    const url = currentCompany === 'all' ? '/api/overview' : `/api/overview?company=${currentCompany}`
-    fetch(url)
+    fetch('/api/overview')
       .then(r => r.json())
       .then(d => setPostCount(d.stats?.postsThisWeek ?? null))
       .catch(() => {})
-  }, [currentCompany])
+  }, [])
 
-  const handleCompanyChange = (companySlug: string) => {
-    const current = new URLSearchParams(Array.from(searchParams.entries()))
-    if (companySlug === 'all') {
-      current.delete('company')
-    } else {
-      current.set('company', companySlug)
-    }
-    const search = current.toString()
-    const query = search ? `?${search}` : ''
-    router.push(`${pathname}${query}`)
-  }
+  // Close on route change
+  useEffect(() => { setOpen(false) }, [pathname])
 
-  return (
-    <div className="w-60 bg-zinc-950 border-r border-zinc-800 h-full flex flex-col shrink-0">
-      <div className="p-6 border-b border-zinc-800">
+  const nav = (
+    <>
+      <div className="p-6 border-b border-zinc-800 flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
           <h1 className="text-lg font-bold text-zinc-50" style={{ fontFamily: 'var(--font-display)' }}>
             AGENT CTRL
           </h1>
         </div>
-      </div>
-
-      {/* Company Switcher */}
-      <div className="p-4 border-b border-zinc-800">
-        <div className="space-y-1">
-          <button
-            onClick={() => handleCompanyChange('all')}
-            className={`w-full flex items-center justify-between px-3 py-2 text-sm font-medium transition-colors cursor-pointer rounded-md ${
-              currentCompany === 'all'
-                ? 'text-zinc-50 bg-zinc-800/50 border-l-2 border-emerald-500'
-                : 'text-zinc-400 hover:text-zinc-50 hover:bg-zinc-800/50'
-            }`}
-          >
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-zinc-500 rounded-full"></div>
-              <span>All Companies</span>
-            </div>
-          </button>
-          
-          {companies.map((company) => (
-            <button
-              key={company.slug}
-              onClick={() => handleCompanyChange(company.slug)}
-              className={`w-full flex items-center justify-between px-3 py-2 text-sm font-medium transition-colors cursor-pointer rounded-md ${
-                currentCompany === company.slug
-                  ? 'text-zinc-50 bg-zinc-800/50'
-                  : 'text-zinc-400 hover:text-zinc-50 hover:bg-zinc-800/50'
-              }`}
-              style={{
-                borderLeft: currentCompany === company.slug ? `2px solid ${company.color}` : '2px solid transparent'
-              }}
-            >
-              <div className="flex items-center space-x-2">
-                <div 
-                  className="w-2 h-2 rounded-full"
-                  style={{ backgroundColor: company.color }}
-                ></div>
-                <span>{company.name}</span>
-              </div>
-              <div className={`text-xs px-2 py-0.5 rounded-full ${
-                company.status === 'active' 
-                  ? 'bg-emerald-900/50 text-emerald-400' 
-                  : company.status === 'onboarding'
-                  ? 'bg-blue-900/50 text-blue-400'
-                  : 'bg-zinc-800 text-zinc-500'
-              }`}>
-                {company.status}
-              </div>
-            </button>
-          ))}
-        </div>
+        <button onClick={() => setOpen(false)} className="md:hidden text-zinc-400 hover:text-zinc-50 cursor-pointer">
+          <X className="w-5 h-5" />
+        </button>
       </div>
 
       <nav className="flex-1 p-4 space-y-1">
         {navItems.map((item) => {
           const isActive = pathname === item.href ||
             (pathname.startsWith(item.href) && item.href !== '/')
-
-          // Preserve company parameter when navigating
-          const currentParams = new URLSearchParams(Array.from(searchParams.entries()))
-          const query = currentParams.toString()
-          const href = query ? `${item.href}?${query}` : item.href
-
           return (
             <Link
               key={item.href}
-              href={href}
+              href={item.href}
               className={`flex items-center px-3 py-2 text-sm font-medium transition-colors cursor-pointer rounded-md ${
                 isActive
                   ? 'text-zinc-50 bg-zinc-800/50 border-l-2 border-emerald-500'
@@ -136,6 +69,36 @@ export function Sidebar() {
           </span>
         </div>
       </div>
-    </div>
+    </>
+  )
+
+  return (
+    <>
+      {/* Mobile header */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-zinc-950 border-b border-zinc-800 px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+          <h1 className="text-base font-bold text-zinc-50" style={{ fontFamily: 'var(--font-display)' }}>AGENT CTRL</h1>
+        </div>
+        <button onClick={() => setOpen(true)} className="text-zinc-400 hover:text-zinc-50 cursor-pointer">
+          <Menu className="w-5 h-5" />
+        </button>
+      </div>
+
+      {/* Mobile overlay */}
+      {open && (
+        <div className="md:hidden fixed inset-0 z-50">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setOpen(false)} />
+          <div className="absolute left-0 top-0 bottom-0 w-60 bg-zinc-950 border-r border-zinc-800 flex flex-col">
+            {nav}
+          </div>
+        </div>
+      )}
+
+      {/* Desktop sidebar */}
+      <div className="hidden md:flex w-60 bg-zinc-950 border-r border-zinc-800 h-full flex-col shrink-0">
+        {nav}
+      </div>
+    </>
   )
 }
