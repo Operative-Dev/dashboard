@@ -1,11 +1,11 @@
-import fs from 'fs';
-import path from 'path';
 import { companies, Company } from './companies';
 
 const BASE_URL = 'https://api.post-bridge.com/v1';
 
-// File-based cache — one file per company
-const CACHE_DIR = path.join(process.cwd(), '.cache');
+// In-memory cache — survives across requests within the same serverless instance
+// Works on both local dev and Netlify/Vercel (no filesystem needed)
+const memoryCache = new Map<string, { data: CachedData; timestamp: number }>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes — auto-refresh after this
 
 interface CachedData {
   accounts: PostBridgeAccount[];
@@ -15,45 +15,20 @@ interface CachedData {
   fetchedAt: string;
 }
 
-function cacheFile(companySlug: string): string {
-  return path.join(CACHE_DIR, `postbridge-${companySlug}.json`);
-}
-
 function readCache(companySlug: string): CachedData | null {
-  try {
-    const file = cacheFile(companySlug);
-    if (fs.existsSync(file)) {
-      return JSON.parse(fs.readFileSync(file, 'utf-8'));
-    }
-  } catch (e) {
-    console.error(`Cache read error (${companySlug}):`, e);
+  const entry = memoryCache.get(companySlug);
+  if (entry && (Date.now() - entry.timestamp) < CACHE_TTL) {
+    return entry.data;
   }
   return null;
 }
 
 function writeCache(companySlug: string, data: CachedData) {
-  try {
-    if (!fs.existsSync(CACHE_DIR)) {
-      fs.mkdirSync(CACHE_DIR, { recursive: true });
-    }
-    fs.writeFileSync(cacheFile(companySlug), JSON.stringify(data), 'utf-8');
-  } catch (e) {
-    console.error(`Cache write error (${companySlug}):`, e);
-  }
+  memoryCache.set(companySlug, { data, timestamp: Date.now() });
 }
 
 export function clearCache() {
-  try {
-    for (const company of companies) {
-      const file = cacheFile(company.slug);
-      if (fs.existsSync(file)) fs.unlinkSync(file);
-    }
-    // Also clean up legacy cache file
-    const legacy = path.join(CACHE_DIR, 'postbridge-data.json');
-    if (fs.existsSync(legacy)) fs.unlinkSync(legacy);
-  } catch (e) {
-    console.error('Cache clear error:', e);
-  }
+  memoryCache.clear();
 }
 
 async function apiFetch<T>(endpoint: string, apiKey: string): Promise<T> {
@@ -166,6 +141,23 @@ function companiesWithKeys(): Company[] {
   return companies.filter(c => c.postbridgeApiKey);
 }
 
+/** Get data for a single company — from cache or fresh fetch */
+async function getCompanyData(company: Company): Promise<CachedData | null> {
+  if (!company.postbridgeApiKey) return null;
+  
+  // Try cache first
+  const cached = readCache(company.slug);
+  if (cached) return cached;
+  
+  // No cache — fetch fresh
+  try {
+    return await syncCompanyData(company);
+  } catch (e) {
+    console.error(`Failed to fetch data for ${company.slug}:`, e);
+    return null;
+  }
+}
+
 export class PostBridgeClient {
   /** Sync analytics for a specific company */
   static async syncAnalytics(apiKey: string): Promise<any> {
@@ -177,60 +169,51 @@ export class PostBridgeClient {
     return response.json();
   }
 
-  /** Sync a single company by slug. Returns the cached data for that company. */
+  /** Sync a single company by slug */
   static async syncCompany(companySlug: string): Promise<CachedData | null> {
     const company = companies.find(c => c.slug === companySlug);
     if (!company || !company.postbridgeApiKey) return null;
 
-    // Trigger analytics sync first (best-effort)
     try { await PostBridgeClient.syncAnalytics(company.postbridgeApiKey); } catch {}
-
     return syncCompanyData(company);
   }
 
   /** Sync ALL companies that have API keys */
   static async syncAll(): Promise<void> {
     const active = companiesWithKeys();
-    // Trigger analytics syncs in parallel (best-effort)
     await Promise.allSettled(
       active.map(c => PostBridgeClient.syncAnalytics(c.postbridgeApiKey))
     );
-    // Fetch data for each company in parallel
     await Promise.allSettled(
       active.map(c => syncCompanyData(c))
     );
   }
 
   /**
-   * Get all data — serves from file caches unless fresh=true.
-   * Merges data from all companies with API keys.
+   * Get all data — serves from in-memory cache (5 min TTL).
+   * On cache miss, fetches from PostBridge automatically.
+   * fresh=true forces a re-fetch for all companies.
    */
   static async getAllData(fresh = false) {
     const active = companiesWithKeys();
 
     if (fresh) {
       await PostBridgeClient.syncAll();
-    }
-
-    // Read caches for all active companies
-    const datasets: CachedData[] = [];
-    for (const company of active) {
-      const cached = readCache(company.slug);
-      if (cached) {
-        datasets.push(cached);
-      } else if (fresh) {
-        // Already synced above, shouldn't happen, but skip gracefully
-      } else {
-        // No cache and not fresh — try fetching this company
-        try {
-          const data = await syncCompanyData(company);
-          datasets.push(data);
-        } catch (e) {
-          console.error(`Failed to fetch data for ${company.slug}:`, e);
-        }
+      // Read back from cache after sync
+      const datasets: CachedData[] = [];
+      for (const company of active) {
+        const cached = readCache(company.slug);
+        if (cached) datasets.push(cached);
       }
+      return mergeData(datasets);
     }
 
+    // Non-fresh: get each company's data (cache or fetch)
+    const results = await Promise.all(
+      active.map(c => getCompanyData(c))
+    );
+    
+    const datasets = results.filter((d): d is CachedData => d !== null);
     return mergeData(datasets);
   }
 }
