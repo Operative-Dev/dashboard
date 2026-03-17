@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { PostBridgeClient } from '@/lib/postbridge';
-import { getCompanyAccountIds } from '@/lib/companies';
+import { getCompanyAccountIds, companies } from '@/lib/companies';
 
 export async function GET(request: Request) {
   try {
@@ -94,7 +94,7 @@ export async function GET(request: Request) {
           handle: account ? `@${account.username}` : '@unknown',
           account_name: account ? account.username : 'Unknown',
           platform: account ? account.platform : 'tiktok',
-          client_name: 'Woz',
+          client_name: companies.find(c => c.postbridgeAccountIds.includes(post.social_accounts[0]))?.name || 'Unknown',
           impressions: analyticsData?.view_count || 0,
           likes: analyticsData?.like_count || 0,
           comments: analyticsData?.comment_count || 0,

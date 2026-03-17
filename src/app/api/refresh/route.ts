@@ -1,17 +1,21 @@
 import { NextResponse } from 'next/server';
 import { PostBridgeClient } from '@/lib/postbridge';
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
-    // Trigger analytics sync on PostBridge first
-    try {
-      await PostBridgeClient.syncAnalytics();
-    } catch (e) {
-      // sync is best-effort
-    }
+    const { searchParams } = new URL(request.url);
+    const companySlug = searchParams.get('company');
 
-    // Force fresh fetch and persist to cache
-    await PostBridgeClient.getAllData(true);
+    if (companySlug) {
+      // Sync a single company
+      const result = await PostBridgeClient.syncCompany(companySlug);
+      if (!result) {
+        return NextResponse.json({ error: `Company '${companySlug}' not found or has no API key` }, { status: 404 });
+      }
+    } else {
+      // Sync all companies
+      await PostBridgeClient.syncAll();
+    }
 
     return NextResponse.json({ success: true, refreshedAt: new Date().toISOString() });
   } catch (error) {

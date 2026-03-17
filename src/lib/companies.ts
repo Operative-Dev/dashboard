@@ -3,6 +3,7 @@ export interface Company {
   name: string;
   slug: string;
   postbridgeAccountIds: number[]; // PostBridge account IDs belonging to this company
+  postbridgeApiKey: string; // PostBridge API key for this company (empty = not onboarded)
   platforms: string[];
   color: string; // accent color for the company
   status: 'active' | 'onboarding' | 'paused';
@@ -14,6 +15,7 @@ export const companies: Company[] = [
     name: 'Woz',
     slug: 'woz',
     postbridgeAccountIds: [47791, 47792, 47793, 47796, 47852],
+    postbridgeApiKey: 'pb_live_3xh1Ms7WDVTy3XG7f1wdDk',
     platforms: ['tiktok'],
     color: '#10b981', // emerald
     status: 'active',
@@ -23,6 +25,7 @@ export const companies: Company[] = [
     name: 'Novi',
     slug: 'novi',
     postbridgeAccountIds: [], // not on PostBridge yet
+    postbridgeApiKey: '',
     platforms: ['tiktok', 'instagram'],
     color: '#3b82f6', // blue
     status: 'onboarding',
@@ -32,6 +35,7 @@ export const companies: Company[] = [
     name: 'Thoughtful',
     slug: 'thoughtful',
     postbridgeAccountIds: [], // not on PostBridge yet
+    postbridgeApiKey: '',
     platforms: ['tiktok', 'instagram'],
     color: '#f59e0b', // amber
     status: 'onboarding',
