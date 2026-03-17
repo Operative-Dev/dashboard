@@ -36,14 +36,25 @@ interface OverviewStats {
 
 interface Post {
   id: string;
+  account_id: string;
   content: string;
-  handle: string;
-  platform: string;
-  client_name: string;
+  media_url: string | null;
   status: 'posted' | 'scheduled' | 'failed' | 'draft';
   created_at: string;
+  published_at: string | null;
   agent_id: string;
+  handle: string;
+  account_name: string;
+  platform: string;
+  client_name: string;
+  impressions: number;
+  likes: number;
+  comments: number;
+  shares: number;
+  engagement_rate: number;
   tiktok_url: string | null;
+  is_draft: boolean;
+  has_failed_results: boolean;
 }
 
 interface ChartData {
