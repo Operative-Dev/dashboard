@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/components/layout/dashboard-layout';
 import MetricCard from '@/components/ui/metric-card';
@@ -58,7 +58,7 @@ interface CompanySummary {
   hasPostBridgeData: boolean;
 }
 
-export default function Dashboard() {
+function DashboardContent() {
   const searchParams = useSearchParams();
   const currentCompany = searchParams.get('company') || 'all';
   const [stats, setStats] = useState<OverviewStats | null>(null);
@@ -366,4 +366,28 @@ export default function Dashboard() {
       </div>
     </DashboardLayout>
   );
+}
+
+export default function Dashboard() {
+  return (
+    <Suspense fallback={
+      <DashboardLayout>
+        <div className="p-8">
+          <div className="animate-pulse space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="skeleton h-32 rounded-lg"></div>
+              ))}
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="skeleton h-80 rounded-lg"></div>
+              <div className="skeleton h-80 rounded-lg"></div>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    }>
+      <DashboardContent />
+    </Suspense>
+  )
 }

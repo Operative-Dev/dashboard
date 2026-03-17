@@ -244,3 +244,15 @@ function PostsContent() {
     </DashboardLayout>
   );
 }
+
+export default function PostsPage() {
+  return (
+    <Suspense fallback={
+      <DashboardLayout title="Posts">
+        <div className="p-8 text-zinc-500 font-mono text-sm">Loading...</div>
+      </DashboardLayout>
+    }>
+      <PostsContent />
+    </Suspense>
+  )
+}
