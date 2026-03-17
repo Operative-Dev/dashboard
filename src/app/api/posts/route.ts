@@ -1,12 +1,20 @@
 import { NextResponse } from 'next/server';
 import { PostBridgeClient } from '@/lib/postbridge';
+import { getCompanyAccountIds } from '@/lib/companies';
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const limit = searchParams.get('limit');
+    const companySlug = searchParams.get('company') || 'all';
+    const companyAccountIds = getCompanyAccountIds(companySlug);
     
     const { accounts, posts, analytics, postResults } = await PostBridgeClient.getAllData();
+    
+    // Filter posts by company account IDs
+    const filteredPosts = companySlug === 'all' ? posts : posts.filter(post => 
+      post.social_accounts.some(accountId => companyAccountIds.includes(accountId))
+    );
     
     // Create account lookup map
     const accountsMap = new Map();
@@ -23,8 +31,8 @@ export async function GET(request: Request) {
       }
     });
     
-    // Transform posts to match the expected format
-    const transformedPosts = posts
+    // Transform filtered posts to match the expected format
+    const transformedPosts = filteredPosts
       .slice(0, limit ? parseInt(limit) : 50)
       .map(post => {
         const account = accountsMap.get(post.social_accounts[0]);

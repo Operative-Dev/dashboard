@@ -1,9 +1,19 @@
 import { NextResponse } from 'next/server';
 import { PostBridgeClient } from '@/lib/postbridge';
+import { getCompanyAccountIds } from '@/lib/companies';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const companySlug = searchParams.get('company') || 'all';
+    const companyAccountIds = getCompanyAccountIds(companySlug);
+    
     const { accounts, posts, analytics, postResults } = await PostBridgeClient.getAllData();
+    
+    // Filter posts by company account IDs
+    const filteredPosts = companySlug === 'all' ? posts : posts.filter(post => 
+      post.social_accounts.some(accountId => companyAccountIds.includes(accountId))
+    );
     
     // Create account lookup
     const accountsMap = new Map();
@@ -17,8 +27,8 @@ export async function GET() {
       analyticsMap.set(item.platform_post_id, item);
     });
     
-    // Failed posts - posts with failed results or failed status
-    const failedPosts = posts.filter(post => {
+    // Failed posts - filtered posts with failed results or failed status
+    const failedPosts = filteredPosts.filter(post => {
       const results = postResults.get(post.id) || [];
       return post.status === 'failed' || results.some(result => !result.success);
     }).map(post => {
@@ -35,8 +45,8 @@ export async function GET() {
       };
     });
     
-    // Low engagement posts - posts with very low engagement rates
-    const lowEngagementPosts = posts.filter(post => {
+    // Low engagement posts - filtered posts with very low engagement rates
+    const lowEngagementPosts = filteredPosts.filter(post => {
       const analyticsData = analyticsMap.get(post.id.toString());
       if (!analyticsData || analyticsData.view_count === 0) return false;
       
@@ -62,9 +72,9 @@ export async function GET() {
       };
     });
     
-    // Stale scheduled posts - posts scheduled but still pending after 24h
+    // Stale scheduled posts - filtered posts scheduled but still pending after 24h
     const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const staleScheduledPosts = posts.filter(post => {
+    const staleScheduledPosts = filteredPosts.filter(post => {
       return post.status === 'scheduled' && new Date(post.created_at) < dayAgo;
     }).map(post => {
       const account = accountsMap.get(post.social_accounts[0]);

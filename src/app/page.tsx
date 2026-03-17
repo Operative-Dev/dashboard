@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/components/layout/dashboard-layout';
 import MetricCard from '@/components/ui/metric-card';
 import StatusBadge from '@/components/ui/status-badge';
 import PlatformBadge from '@/components/ui/platform-badge';
+import { companies, getCompanyBySlug } from '@/lib/companies';
 import {
   BarChart,
   Users,
@@ -44,23 +46,43 @@ interface ChartData {
   impressionsOverTime: Array<{ date: string; impressions: number }>;
 }
 
+interface CompanySummary {
+  id: string;
+  name: string;
+  slug: string;
+  status: 'active' | 'onboarding' | 'paused';
+  platforms: string[];
+  color: string;
+  postCount: number;
+  postsThisWeek: number;
+  hasPostBridgeData: boolean;
+}
+
 export default function Dashboard() {
+  const searchParams = useSearchParams();
+  const currentCompany = searchParams.get('company') || 'all';
   const [stats, setStats] = useState<OverviewStats | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [charts, setCharts] = useState<ChartData | null>(null);
+  const [companySummaries, setCompanySummaries] = useState<CompanySummary[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchData() {
       try {
+        // Build API URLs with company parameter
+        const overviewUrl = currentCompany === 'all' ? '/api/overview' : `/api/overview?company=${currentCompany}`;
+        const postsUrl = currentCompany === 'all' ? '/api/posts?limit=20' : `/api/posts?limit=20&company=${currentCompany}`;
+        
         // Fetch overview stats
-        const overviewRes = await fetch('/api/overview');
+        const overviewRes = await fetch(overviewUrl);
         const overviewData = await overviewRes.json();
         setStats(overviewData.stats);
         setCharts(overviewData.charts);
+        setCompanySummaries(overviewData.companySummaries || []);
 
         // Fetch recent posts
-        const postsRes = await fetch('/api/posts?limit=20');
+        const postsRes = await fetch(postsUrl);
         const postsData = await postsRes.json();
         setPosts(postsData.posts);
       } catch (error) {
@@ -71,7 +93,7 @@ export default function Dashboard() {
     }
 
     fetchData();
-  }, []);
+  }, [currentCompany]);
 
   const formatNumber = (num: number) => {
     if (num >= 1000000) {
@@ -136,7 +158,7 @@ export default function Dashboard() {
             <MetricCard
               title="Total Views"
               value={formatNumber(stats.totalImpressions)}
-              subtitle="Across all platforms"
+              subtitle={currentCompany === 'all' ? 'Across all platforms' : `For ${getCompanyBySlug(currentCompany)?.name}`}
               icon={Eye}
               changeType="positive"
             />
@@ -148,12 +170,75 @@ export default function Dashboard() {
               changeType={stats.successRate >= 95 ? 'positive' : 'negative'}
             />
             <MetricCard
-              title="Active Clients"
+              title="Active Accounts"
               value={stats.activeClients}
               subtitle="Posting regularly"
               icon={Users}
               changeType="positive"
             />
+          </div>
+        )}
+
+        {/* Company Summaries (only when viewing all companies) */}
+        {currentCompany === 'all' && companySummaries.length > 0 && (
+          <div className="bg-zinc-900 border border-zinc-800 rounded-md p-6">
+            <h3 className="text-lg font-semibold text-zinc-50 mb-6" style={{ fontFamily: 'var(--font-display)' }}>
+              Company Overview
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {companySummaries.map((company) => (
+                <div 
+                  key={company.id} 
+                  className="bg-zinc-800/50 border border-zinc-700 p-4 rounded-md hover:bg-zinc-800 transition-colors cursor-pointer"
+                  style={{ borderLeftColor: company.color, borderLeftWidth: '3px' }}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center space-x-2">
+                      <div 
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: company.color }}
+                      ></div>
+                      <h4 className="font-semibold text-zinc-50" style={{ fontFamily: 'var(--font-display)' }}>
+                        {company.name}
+                      </h4>
+                    </div>
+                    <div className={`text-xs px-2 py-0.5 rounded-full ${
+                      company.status === 'active' 
+                        ? 'bg-emerald-900/50 text-emerald-400' 
+                        : company.status === 'onboarding'
+                        ? 'bg-blue-900/50 text-blue-400'
+                        : 'bg-zinc-800 text-zinc-500'
+                    }`}>
+                      {company.status}
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-zinc-400">Total Posts:</span>
+                      <span className="text-zinc-50 font-mono">{company.postCount}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-zinc-400">This Week:</span>
+                      <span className="text-zinc-50 font-mono">{company.postsThisWeek}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-zinc-400">Platforms:</span>
+                      <div className="flex space-x-1">
+                        {company.platforms.map((platform) => (
+                          <PlatformBadge key={platform} platform={platform} size="sm" showIcon={false} />
+                        ))}
+                      </div>
+                    </div>
+                    {!company.hasPostBridgeData && (
+                      <div className="text-xs text-amber-400 bg-amber-900/20 px-2 py-1 rounded">
+                        No PostBridge data yet
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 

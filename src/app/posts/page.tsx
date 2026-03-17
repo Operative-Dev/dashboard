@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect, Fragment } from 'react';
+import { useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/components/layout/dashboard-layout';
 import StatusBadge from '@/components/ui/status-badge';
 import PlatformBadge from '@/components/ui/platform-badge';
+import { getCompanyBySlug } from '@/lib/companies';
 import { Search, ExternalLink, Clock, Eye, Heart, MessageCircle, Share2 } from 'lucide-react';
 
 interface Post {
@@ -26,18 +28,24 @@ interface Post {
 }
 
 export default function PostsPage() {
+  const searchParams = useSearchParams();
+  const currentCompany = searchParams.get('company') || 'all';
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [expandedPost, setExpandedPost] = useState<string | null>(null);
 
+  const company = currentCompany !== 'all' ? getCompanyBySlug(currentCompany) : null;
+  const hasNoPostBridgeData = company && company.postbridgeAccountIds.length === 0;
+
   useEffect(() => {
-    fetch('/api/posts?limit=100')
+    const url = currentCompany === 'all' ? '/api/posts?limit=100' : `/api/posts?limit=100&company=${currentCompany}`;
+    fetch(url)
       .then(r => r.json())
       .then(data => { setPosts(data.posts || []); setLoading(false); })
       .catch(() => setLoading(false));
-  }, []);
+  }, [currentCompany]);
 
   const filtered = posts.filter(p => {
     const matchSearch = !searchTerm ||
@@ -59,8 +67,46 @@ export default function PostsPage() {
     return <DashboardLayout title="Posts"><div className="p-8 text-zinc-500 font-mono text-sm">Loading...</div></DashboardLayout>;
   }
 
+  // Show empty state for companies without PostBridge data
+  if (hasNoPostBridgeData) {
+    return (
+      <DashboardLayout title={`Posts - ${company?.name}`}>
+        <div className="p-8">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-md p-8 text-center">
+            <div className="flex flex-col items-center space-y-4">
+              <div 
+                className="w-12 h-12 rounded-full flex items-center justify-center"
+                style={{ backgroundColor: `${company?.color}20`, border: `1px solid ${company?.color}` }}
+              >
+                <div 
+                  className="w-3 h-3 rounded-full"
+                  style={{ backgroundColor: company?.color }}
+                ></div>
+              </div>
+              <h3 className="text-lg font-semibold text-zinc-50" style={{ fontFamily: 'var(--font-display)' }}>
+                No posts yet for {company?.name}
+              </h3>
+              <p className="text-zinc-400 max-w-md">
+                This company's accounts are not connected to PostBridge yet. Once connected, posts will appear here.
+              </p>
+              <div className={`text-xs px-3 py-1 rounded-full ${
+                company?.status === 'onboarding'
+                  ? 'bg-blue-900/50 text-blue-400 border border-blue-700'
+                  : 'bg-zinc-800 text-zinc-500 border border-zinc-700'
+              }`}>
+                Status: {company?.status}
+              </div>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  const pageTitle = currentCompany === 'all' ? 'Posts' : `Posts - ${company?.name}`;
+
   return (
-    <DashboardLayout title="Posts">
+    <DashboardLayout title={pageTitle}>
       <div className="p-8 space-y-6">
         {/* Filters */}
         <div className="flex gap-4">

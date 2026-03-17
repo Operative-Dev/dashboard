@@ -85,6 +85,33 @@ export async function GET(request: Request) {
         : 0;
       return engagementRate < 1.0;
     }).length;
+
+    // Company summaries (only when viewing all companies)
+    let companySummaries: any[] = [];
+    if (companySlug === 'all') {
+      companySummaries = companies.map(company => {
+        const companyPosts = posts.filter(post => 
+          post.social_accounts.some(accountId => company.postbridgeAccountIds.includes(accountId))
+        );
+        const companyPostCount = companyPosts.length;
+        const companyPostsThisWeek = companyPosts.filter(post => {
+          const postDate = new Date(post.created_at).toISOString().split('T')[0];
+          return postDate >= weekAgo;
+        }).length;
+
+        return {
+          id: company.id,
+          name: company.name,
+          slug: company.slug,
+          status: company.status,
+          platforms: company.platforms,
+          color: company.color,
+          postCount: companyPostCount,
+          postsThisWeek: companyPostsThisWeek,
+          hasPostBridgeData: company.postbridgeAccountIds.length > 0
+        };
+      });
+    }
     
     return NextResponse.json({
       stats: {
@@ -99,7 +126,8 @@ export async function GET(request: Request) {
       charts: {
         postsOverTime,
         impressionsOverTime: viewsOverTime
-      }
+      },
+      companySummaries
     });
   } catch (error) {
     console.error('Error fetching overview data:', error);
