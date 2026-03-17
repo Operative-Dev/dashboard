@@ -24,7 +24,7 @@ export const companies: Company[] = [
     id: 'novi',
     name: 'Novi',
     slug: 'novi',
-    postbridgeAccountIds: [],
+    postbridgeAccountIds: [50441, 50442], // @novistartuptips, @novi.startup.idea
     postbridgeApiKey: 'pb_live_Paed5uuR1qdGnYux2qoXty',
     platforms: ['tiktok', 'instagram'],
     color: '#3b82f6', // blue

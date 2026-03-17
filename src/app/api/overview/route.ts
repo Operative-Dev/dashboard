@@ -142,7 +142,7 @@ export async function GET(request: Request) {
           color: company.color,
           postCount: companyPostCount,
           postsThisWeek: companyPostsThisWeek,
-          hasPostBridgeData: company.postbridgeAccountIds.length > 0
+          hasPostBridgeData: !!company.postbridgeApiKey
         };
       });
     }
