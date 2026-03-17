@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/components/layout/dashboard-layout';
 import MetricCard from '@/components/ui/metric-card';
@@ -15,7 +15,9 @@ import {
   Activity,
   AlertTriangle,
   Clock,
-  Eye
+  Eye,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 
@@ -58,6 +60,39 @@ interface CompanySummary {
   hasPostBridgeData: boolean;
 }
 
+interface AccountData {
+  id: number;
+  username: string;
+  platform: string;
+  companySlug: string;
+  companyName: string;
+  companyColor: string;
+  postsLive: number;
+  totalViews: number;
+  totalLikes: number;
+  totalComments: number;
+  totalShares: number;
+  avgViews: number;
+  recentActivity: number[];
+}
+
+function MiniSparkline({ data, color }: { data: number[]; color: string }) {
+  if (!data || data.length === 0) return null;
+  const max = Math.max(...data, 1);
+  const h = 24;
+  const w = 56;
+  const points = data.map((v, i) => {
+    const x = (i / (data.length - 1)) * w;
+    const y = h - (v / max) * (h - 2) - 1;
+    return `${x},${y}`;
+  }).join(' ');
+  return (
+    <svg width={w} height={h} className="opacity-60">
+      <polyline points={points} fill="none" stroke={color} strokeWidth="1.5" />
+    </svg>
+  );
+}
+
 function DashboardContent() {
   const searchParams = useSearchParams();
   const currentCompany = searchParams.get('company') || 'all';
@@ -69,6 +104,10 @@ function DashboardContent() {
   const [refreshing, setRefreshing] = useState(false);
   const [fetchedAt, setFetchedAt] = useState<string | null>(null);
   const [timePeriod, setTimePeriod] = useState(7);
+  const [expandedCompany, setExpandedCompany] = useState<string | null>(null);
+  const [companyAccounts, setCompanyAccounts] = useState<Record<string, AccountData[]>>({});
+  const [selectedAccount, setSelectedAccount] = useState<string | null>(null); // username filter
+  const [accountPosts, setAccountPosts] = useState<Post[]>([]);
 
   const fetchData = async (fresh = false) => {
     try {
@@ -95,6 +134,43 @@ function DashboardContent() {
       setRefreshing(false);
     }
   };
+
+  const toggleCompanyExpand = useCallback(async (slug: string) => {
+    if (expandedCompany === slug) {
+      setExpandedCompany(null);
+      setSelectedAccount(null);
+      return;
+    }
+    setExpandedCompany(slug);
+    setSelectedAccount(null);
+    if (!companyAccounts[slug]) {
+      try {
+        const res = await fetch(`/api/accounts?company=${slug}`);
+        const data = await res.json();
+        setCompanyAccounts(prev => ({ ...prev, [slug]: data.accounts }));
+      } catch (e) {
+        console.error('Failed to fetch accounts:', e);
+      }
+    }
+  }, [expandedCompany, companyAccounts]);
+
+  const handleAccountClick = useCallback(async (username: string) => {
+    if (selectedAccount === username) {
+      setSelectedAccount(null);
+      return;
+    }
+    setSelectedAccount(username);
+    try {
+      const res = await fetch(`/api/posts?limit=50&company=${expandedCompany}`);
+      const data = await res.json();
+      // Filter posts by account username (handle field)
+      setAccountPosts((data.posts ?? []).filter((p: Post) => 
+        p.handle?.toLowerCase() === username.toLowerCase() || p.handle?.toLowerCase() === `@${username.toLowerCase()}`
+      ));
+    } catch (e) {
+      console.error('Failed to fetch account posts:', e);
+    }
+  }, [selectedAccount, expandedCompany]);
 
   // Load from cache on page load / filter change (no API call to PostBridge)
   useEffect(() => {
@@ -224,59 +300,139 @@ function DashboardContent() {
             <h3 className="text-lg font-semibold text-zinc-50 mb-6" style={{ fontFamily: 'var(--font-display)' }}>
               Company Overview
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {companySummaries.map((company) => (
-                <div 
-                  key={company.id} 
-                  className="bg-zinc-800/50 border border-zinc-700 p-4 rounded-md hover:bg-zinc-800 transition-colors cursor-pointer"
-                  style={{ borderLeftColor: company.color, borderLeftWidth: '3px' }}
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center space-x-2">
-                      <div 
-                        className="w-2 h-2 rounded-full"
-                        style={{ backgroundColor: company.color }}
-                      ></div>
-                      <h4 className="font-semibold text-zinc-50" style={{ fontFamily: 'var(--font-display)' }}>
-                        {company.name}
-                      </h4>
-                    </div>
-                    <div className={`text-xs px-2 py-0.5 rounded-full ${
-                      company.status === 'active' 
-                        ? 'bg-emerald-900/50 text-emerald-400' 
-                        : company.status === 'onboarding'
-                        ? 'bg-blue-900/50 text-blue-400'
-                        : 'bg-zinc-800 text-zinc-500'
-                    }`}>
-                      {company.status}
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-zinc-400">Total Posts:</span>
-                      <span className="text-zinc-50 font-mono">{company.postCount}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-zinc-400">This Week:</span>
-                      <span className="text-zinc-50 font-mono">{company.postsThisWeek}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-zinc-400">Platforms:</span>
-                      <div className="flex space-x-1">
-                        {company.platforms.map((platform) => (
-                          <PlatformBadge key={platform} platform={platform} size="sm" showIcon={false} />
-                        ))}
+            <div className="space-y-4">
+              {companySummaries.map((company) => {
+                const isExpanded = expandedCompany === company.slug;
+                const accounts = companyAccounts[company.slug] || [];
+                return (
+                  <div key={company.id}>
+                    <div 
+                      className="bg-zinc-800/50 border border-zinc-700 p-4 rounded-md hover:bg-zinc-800 transition-colors cursor-pointer"
+                      style={{ borderLeftColor: company.color, borderLeftWidth: '3px' }}
+                      onClick={() => company.hasPostBridgeData && toggleCompanyExpand(company.slug)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          {company.hasPostBridgeData ? (
+                            isExpanded ? <ChevronDown className="w-4 h-4 text-zinc-400" /> : <ChevronRight className="w-4 h-4 text-zinc-400" />
+                          ) : <div className="w-4" />}
+                          <div 
+                            className="w-2 h-2 rounded-full"
+                            style={{ backgroundColor: company.color }}
+                          />
+                          <h4 className="font-semibold text-zinc-50" style={{ fontFamily: 'var(--font-display)' }}>
+                            {company.name}
+                          </h4>
+                          <div className={`text-xs px-2 py-0.5 rounded-full ${
+                            company.status === 'active' 
+                              ? 'bg-emerald-900/50 text-emerald-400' 
+                              : company.status === 'onboarding'
+                              ? 'bg-blue-900/50 text-blue-400'
+                              : 'bg-zinc-800 text-zinc-500'
+                          }`}>
+                            {company.status}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-6 text-sm">
+                          <div className="text-zinc-400">
+                            <span className="text-zinc-50 font-mono">{company.postCount}</span> posts
+                          </div>
+                          <div className="text-zinc-400">
+                            <span className="text-zinc-50 font-mono">{company.postsThisWeek}</span> this week
+                          </div>
+                          <div className="flex space-x-1">
+                            {company.platforms.map((platform) => (
+                              <PlatformBadge key={platform} platform={platform} size="sm" showIcon={false} />
+                            ))}
+                          </div>
+                          {!company.hasPostBridgeData && (
+                            <div className="text-xs text-amber-400 bg-amber-900/20 px-2 py-1 rounded">
+                              No PostBridge data yet
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
-                    {!company.hasPostBridgeData && (
-                      <div className="text-xs text-amber-400 bg-amber-900/20 px-2 py-1 rounded">
-                        No PostBridge data yet
+
+                    {/* Expanded account cards */}
+                    {isExpanded && (
+                      <div className="mt-3 ml-6">
+                        {accounts.length === 0 ? (
+                          <div className="text-sm text-zinc-500 py-4">Loading accounts...</div>
+                        ) : (
+                          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                            {accounts.map((acc) => {
+                              const isSelected = selectedAccount === acc.username.toLowerCase();
+                              return (
+                                <div key={acc.id}>
+                                  <div
+                                    className={`bg-zinc-800/70 border p-4 rounded-md hover:bg-zinc-800 transition-colors cursor-pointer ${
+                                      isSelected ? 'border-zinc-500 bg-zinc-800' : 'border-zinc-700/50'
+                                    }`}
+                                    onClick={(e) => { e.stopPropagation(); handleAccountClick(acc.username.toLowerCase()); }}
+                                  >
+                                    <div className="flex items-center justify-between mb-3">
+                                      <span className="text-zinc-50 font-semibold text-sm" style={{ fontFamily: 'var(--font-display)' }}>
+                                        @{acc.username}
+                                      </span>
+                                      <MiniSparkline data={acc.recentActivity} color={company.color} />
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-2 text-xs">
+                                      <div>
+                                        <div className="text-zinc-500">Posts</div>
+                                        <div className="text-zinc-50 font-mono">{acc.postsLive}</div>
+                                      </div>
+                                      <div>
+                                        <div className="text-zinc-500">Views</div>
+                                        <div className="text-zinc-50 font-mono">{formatNumber(acc.totalViews)}</div>
+                                      </div>
+                                      <div>
+                                        <div className="text-zinc-500">Avg Views</div>
+                                        <div className="text-zinc-50 font-mono">{formatNumber(acc.avgViews)}</div>
+                                      </div>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-2 text-xs mt-2">
+                                      <div>
+                                        <div className="text-zinc-500">Likes</div>
+                                        <div className="text-zinc-50 font-mono">{formatNumber(acc.totalLikes)}</div>
+                                      </div>
+                                      <div>
+                                        <div className="text-zinc-500">Comments</div>
+                                        <div className="text-zinc-50 font-mono">{formatNumber(acc.totalComments)}</div>
+                                      </div>
+                                      <div>
+                                        <div className="text-zinc-500">Shares</div>
+                                        <div className="text-zinc-50 font-mono">{formatNumber(acc.totalShares)}</div>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Account posts inline */}
+                                  {isSelected && accountPosts.length > 0 && (
+                                    <div className="mt-2 bg-zinc-900/50 border border-zinc-800 rounded-md p-3 space-y-1">
+                                      <div className="text-xs text-zinc-500 mb-2 font-mono">Posts by @{acc.username}</div>
+                                      {accountPosts.slice(0, 10).map((post) => (
+                                        <div key={post.id} className="flex items-center gap-3 py-2 border-b border-zinc-800/50 last:border-0">
+                                          <StatusBadge status={post.status} />
+                                          <p className="text-zinc-300 text-xs truncate flex-1">{truncateContent(post.content, 60)}</p>
+                                          <span className="text-xs text-zinc-600 font-mono">{formatDate(post.created_at)}</span>
+                                        </div>
+                                      ))}
+                                      {accountPosts.length > 10 && (
+                                        <div className="text-xs text-zinc-600 pt-1">+{accountPosts.length - 10} more</div>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

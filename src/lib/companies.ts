@@ -34,11 +34,11 @@ export const companies: Company[] = [
     id: 'thoughtful',
     name: 'Thoughtful',
     slug: 'thoughtful',
-    postbridgeAccountIds: [], // not on PostBridge yet
-    postbridgeApiKey: '',
+    postbridgeAccountIds: [50426], // @solobuilder7
+    postbridgeApiKey: 'pb_live_JyMJsnUzEW8DzGpeSrYuk1',
     platforms: ['tiktok', 'instagram'],
     color: '#f59e0b', // amber
-    status: 'onboarding',
+    status: 'active',
   },
 ];
 
