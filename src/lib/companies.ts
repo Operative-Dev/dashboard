@@ -34,7 +34,7 @@ export const companies: Company[] = [
     id: 'thoughtful',
     name: 'Thoughtful',
     slug: 'thoughtful',
-    postbridgeAccountIds: [50426], // @solobuilder7
+    postbridgeAccountIds: [50426, 50430], // @solobuilder7, @newtoolwhodis
     postbridgeApiKey: 'pb_live_JyMJsnUzEW8DzGpeSrYuk1',
     platforms: ['tiktok', 'instagram'],
     color: '#f59e0b', // amber

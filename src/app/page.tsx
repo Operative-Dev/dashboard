@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/dashboard-layout';
 import MetricCard from '@/components/ui/metric-card';
 import StatusBadge from '@/components/ui/status-badge';
@@ -109,7 +109,18 @@ function MiniSparkline({ data, color }: { data: number[]; color: string }) {
 
 function DashboardContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const currentCompany = searchParams.get('company') || 'all';
+  
+  const setCurrentCompany = (slug: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (slug === 'all') {
+      params.delete('company');
+    } else {
+      params.set('company', slug);
+    }
+    router.push(`?${params.toString()}`);
+  };
   const [stats, setStats] = useState<OverviewStats | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [charts, setCharts] = useState<ChartData | null>(null);
@@ -250,17 +261,28 @@ function DashboardContent() {
   return (
     <DashboardLayout title="Overview">
       <div className="p-4 md:p-8 space-y-8">
-        {/* Refresh bar */}
+        {/* Controls bar */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 bg-zinc-900/50 border border-zinc-800 rounded-md px-4 py-2">
-          <div className="flex items-center gap-2 text-xs text-zinc-500 font-mono">
-            <div className={`w-1.5 h-1.5 rounded-full ${refreshing ? 'bg-amber-400 animate-pulse' : 'bg-emerald-500'}`} />
-            {fetchedAt ? (
-              <>
-                <span>Live data</span>
-                <span className="text-zinc-600">·</span>
-                <span>synced {new Date(fetchedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
-              </>
-            ) : 'Loading...'}
+          <div className="flex items-center gap-3">
+            <select
+              value={currentCompany}
+              onChange={(e) => setCurrentCompany(e.target.value)}
+              className="bg-zinc-800 border border-zinc-700 text-zinc-50 text-xs font-mono rounded-md px-3 py-1.5 cursor-pointer focus:outline-none focus:ring-1 focus:ring-zinc-600 appearance-none pr-7"
+              style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center' }}
+            >
+              <option value="all">All Companies</option>
+              {companies.filter(c => c.postbridgeApiKey).map(c => (
+                <option key={c.slug} value={c.slug}>{c.name}</option>
+              ))}
+            </select>
+            <div className="flex items-center gap-2 text-xs text-zinc-500 font-mono">
+              <div className={`w-1.5 h-1.5 rounded-full ${refreshing ? 'bg-amber-400 animate-pulse' : 'bg-emerald-500'}`} />
+              {fetchedAt ? (
+                <>
+                  <span className="hidden sm:inline">synced {new Date(fetchedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                </>
+              ) : 'Loading...'}
+            </div>
           </div>
           <button
             onClick={handleRefresh}
