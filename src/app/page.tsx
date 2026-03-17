@@ -237,7 +237,7 @@ function DashboardContent() {
     <DashboardLayout title="Overview">
       <div className="p-4 md:p-8 space-y-8">
         {/* Refresh bar */}
-        <div className="flex items-center justify-between bg-zinc-900/50 border border-zinc-800 rounded-md px-4 py-2">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 bg-zinc-900/50 border border-zinc-800 rounded-md px-4 py-2">
           <div className="flex items-center gap-2 text-xs text-zinc-500 font-mono">
             <div className={`w-1.5 h-1.5 rounded-full ${refreshing ? 'bg-amber-400 animate-pulse' : 'bg-emerald-500'}`} />
             {fetchedAt ? (
@@ -333,7 +333,7 @@ function DashboardContent() {
                             {company.status}
                           </div>
                         </div>
-                        <div className="flex items-center gap-6 text-sm">
+                        <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-sm">
                           <div className="text-zinc-400">
                             <span className="text-zinc-50 font-mono">{company.postCount}</span> posts
                           </div>
@@ -458,7 +458,7 @@ function DashboardContent() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Posts Over Time */}
           {charts?.postsOverTime && (
-            <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-md">
+            <div className="bg-zinc-900 border border-zinc-800 p-4 sm:p-6 rounded-md">
               <h3 className="text-lg font-semibold text-zinc-50 mb-4" style={{ fontFamily: 'var(--font-display)' }}>
                 Posts Activity ({timePeriod}d)
               </h3>
@@ -499,7 +499,7 @@ function DashboardContent() {
 
           {/* Impressions Over Time */}
           {charts?.impressionsOverTime && (
-            <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-md">
+            <div className="bg-zinc-900 border border-zinc-800 p-4 sm:p-6 rounded-md">
               <h3 className="text-lg font-semibold text-zinc-50 mb-4" style={{ fontFamily: 'var(--font-display)' }}>
                 Views ({timePeriod}d)
               </h3>
@@ -550,26 +550,29 @@ function DashboardContent() {
             {posts.map((post) => (
               <div 
                 key={post.id} 
-                className="flex items-center gap-4 p-4 hover:bg-zinc-800/50 transition-colors cursor-pointer rounded border-b border-zinc-800 last:border-b-0"
+                className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 p-3 sm:p-4 hover:bg-zinc-800/50 transition-colors cursor-pointer rounded border-b border-zinc-800 last:border-b-0"
               >
-                <div className="flex items-center gap-2 w-16">
+                <div className="flex items-center gap-2">
                   <PlatformBadge platform={post.platform} size="sm" showIcon={true} />
-                </div>
-                <div className="flex items-center gap-2 w-32">
                   <span className="text-sm text-zinc-400 font-mono truncate">
                     {post.handle}
                   </span>
+                  <span className="sm:hidden ml-auto"><StatusBadge status={post.status} /></span>
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-zinc-50 text-sm truncate">
                     {truncateContent(post.content)}
                   </p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="hidden sm:flex items-center gap-3">
                   <StatusBadge status={post.status} />
                   <span className="text-xs text-zinc-500 font-mono w-20 text-right">
                     {formatDate(post.created_at)}
                   </span>
+                </div>
+                <div className="flex sm:hidden items-center justify-between text-xs text-zinc-500 font-mono">
+                  <span>{post.impressions > 0 ? `${post.impressions} views` : ''}</span>
+                  <span>{formatDate(post.created_at)}</span>
                 </div>
               </div>
             ))}
