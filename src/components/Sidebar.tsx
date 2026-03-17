@@ -46,42 +46,17 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
     <>
       {/* Company Switcher */}
       <div className="p-4 border-b border-zinc-800">
-        <div className="text-xs font-mono uppercase tracking-wider text-zinc-500 mb-2 px-3">Companies</div>
-        <div className="space-y-1">
-          <button
-            onClick={() => handleCompanyChange('all')}
-            className={`w-full flex items-center px-3 py-2 text-sm font-medium transition-colors cursor-pointer rounded-md ${
-              currentCompany === 'all'
-                ? 'text-zinc-50 bg-zinc-800/50 border-l-2 border-emerald-500'
-                : 'text-zinc-400 hover:text-zinc-50 hover:bg-zinc-800/50'
-            }`}
-          >
-            <div className="w-2 h-2 bg-zinc-500 rounded-full mr-2"></div>
-            All Companies
-          </button>
+        <div className="text-xs font-mono uppercase tracking-wider text-zinc-500 mb-2 px-3">Company</div>
+        <select
+          value={currentCompany}
+          onChange={(e) => handleCompanyChange(e.target.value)}
+          className="w-full bg-zinc-800 border border-zinc-700 text-zinc-50 text-sm font-medium rounded-md px-3 py-2 cursor-pointer focus:outline-none focus:ring-1 focus:ring-zinc-600"
+        >
+          <option value="all">All Companies</option>
           {companies.map((c) => (
-            <button
-              key={c.slug}
-              onClick={() => handleCompanyChange(c.slug)}
-              className={`w-full flex items-center justify-between px-3 py-2 text-sm font-medium transition-colors cursor-pointer rounded-md ${
-                currentCompany === c.slug
-                  ? 'text-zinc-50 bg-zinc-800/50'
-                  : 'text-zinc-400 hover:text-zinc-50 hover:bg-zinc-800/50'
-              }`}
-              style={{ borderLeft: currentCompany === c.slug ? `2px solid ${c.color}` : '2px solid transparent' }}
-            >
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: c.color }}></div>
-                <span>{c.name}</span>
-              </div>
-              <span className={`text-xs px-2 py-0.5 rounded-full ${
-                c.status === 'active' ? 'bg-emerald-900/50 text-emerald-400'
-                : c.status === 'onboarding' ? 'bg-blue-900/50 text-blue-400'
-                : 'bg-zinc-800 text-zinc-500'
-              }`}>{c.status}</span>
-            </button>
+            <option key={c.slug} value={c.slug}>{c.name}</option>
           ))}
-        </div>
+        </select>
       </div>
 
       {/* Nav */}
