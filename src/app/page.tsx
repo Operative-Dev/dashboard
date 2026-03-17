@@ -87,7 +87,7 @@ function DashboardContent() {
       setCharts(overviewData.charts);
       setCompanySummaries(overviewData.companySummaries || []);
       setFetchedAt(new Date().toISOString()); // Use actual fetch time, not cached time
-      setPosts(postsData.posts);
+      setPosts(postsData.posts ?? []);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
@@ -96,13 +96,9 @@ function DashboardContent() {
     }
   };
 
-  // Auto-sync on first load and when company/period changes
+  // Load from cache on page load / filter change (no API call to PostBridge)
   useEffect(() => {
-    const syncAndFetch = async () => {
-      try { await fetch('/api/refresh', { method: 'POST' }); } catch {}
-      await fetchData(true);
-    };
-    syncAndFetch();
+    fetchData(false);
   }, [currentCompany, timePeriod]);
 
   const handleRefresh = async () => {
@@ -206,11 +202,11 @@ function DashboardContent() {
               changeType="positive"
             />
             <MetricCard
-              title="Success Rate"
-              value={`${stats.successRate}%`}
-              subtitle="Posts published successfully"
+              title="Total Live"
+              value={stats.totalLive || 0}
+              subtitle={`${stats.totalQueued || 0} queued in TikTok inbox`}
               icon={TrendingUp}
-              changeType={stats.successRate >= 95 ? 'positive' : 'negative'}
+              changeType="positive"
             />
             <MetricCard
               title="Active Accounts"

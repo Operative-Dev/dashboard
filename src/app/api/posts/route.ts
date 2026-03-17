@@ -18,27 +18,69 @@ export async function GET(request: Request) {
     );
     
     // Create account lookup map
-    const accountsMap = new Map();
+    const accountsMap = new Map<number, typeof accounts[0]>();
     accounts.forEach(account => {
       accountsMap.set(account.id, account);
     });
     
-    // Create analytics lookup map by video_description (caption match) since we don't have platform_post_id on posts
-    const analyticsMap = new Map();
+    // Build analytics lookup using TWO strategies:
+    // 1. post_result_id join (most accurate)
+    // 2. username + caption fallback (for posts without result data)
+    
+    const analyticsByResultId = new Map<string, typeof analytics[0]>();
+    // Key: "username|caption_prefix" → analytics entries for that combo
+    const analyticsByAccountCaption = new Map<string, typeof analytics[0][]>();
+    
     analytics.forEach(item => {
-      // Index by description for matching
-      if (item.video_description) {
-        analyticsMap.set(item.video_description.substring(0, 80), item);
+      // Strategy 1: index by post_result_id
+      if (item.post_result_id) {
+        analyticsByResultId.set(item.post_result_id, item);
+      }
+      
+      // Strategy 2: index by username extracted from share_url + caption
+      const usernameMatch = item.share_url?.match(/tiktok\.com\/@([^/]+)/);
+      if (usernameMatch && item.video_description) {
+        const key = `${usernameMatch[1].toLowerCase()}|${item.video_description.substring(0, 60)}`;
+        const existing = analyticsByAccountCaption.get(key) || [];
+        existing.push(item);
+        analyticsByAccountCaption.set(key, existing);
       }
     });
     
-    // Transform filtered posts to match the expected format
+    // Track which analytics entries have been claimed (to avoid double-counting)
+    const claimedAnalytics = new Set<string>();
+    
+    // Transform filtered posts
     const transformedPosts = filteredPosts
-      .slice(0, limit ? parseInt(limit) : 50)
+      .slice(0, limit ? parseInt(limit) : 100)
       .map(post => {
         const account = accountsMap.get(post.social_accounts[0]);
-        const analyticsData = analyticsMap.get(post.caption.substring(0, 80));
         const results = postResults.get(post.id) || [];
+        
+        // Strategy 1: match via post_result_id
+        let analyticsData: typeof analytics[0] | null = null;
+        for (const result of results) {
+          const match = analyticsByResultId.get(result.id);
+          if (match && !claimedAnalytics.has(match.platform_post_id)) {
+            analyticsData = match;
+            claimedAnalytics.add(match.platform_post_id);
+            break;
+          }
+        }
+        
+        // Strategy 2: fallback to username + caption match
+        if (!analyticsData && account) {
+          const key = `${account.username.toLowerCase()}|${post.caption.substring(0, 60)}`;
+          const candidates = analyticsByAccountCaption.get(key) || [];
+          // Pick the first unclaimed one (ordered by time from API)
+          for (const candidate of candidates) {
+            if (!claimedAnalytics.has(candidate.platform_post_id)) {
+              analyticsData = candidate;
+              claimedAnalytics.add(candidate.platform_post_id);
+              break;
+            }
+          }
+        }
         
         return {
           id: post.id.toString(),
@@ -48,12 +90,11 @@ export async function GET(request: Request) {
           status: post.status,
           created_at: post.created_at,
           published_at: post.status === 'posted' ? post.created_at : null,
-          agent_id: 'Agent', // Default agent name
+          agent_id: 'Agent',
           handle: account ? `@${account.username}` : '@unknown',
           account_name: account ? account.username : 'Unknown',
           platform: account ? account.platform : 'tiktok',
-          client_name: 'Woz', // All current accounts belong to Woz
-          // Analytics data
+          client_name: 'Woz',
           impressions: analyticsData?.view_count || 0,
           likes: analyticsData?.like_count || 0,
           comments: analyticsData?.comment_count || 0,
@@ -63,15 +104,21 @@ export async function GET(request: Request) {
               ? ((analyticsData.like_count + analyticsData.comment_count + analyticsData.share_count) / analyticsData.view_count) * 100
               : 0) 
             : 0,
-          // TikTok URL from analytics or results
           tiktok_url: analyticsData?.share_url || 
             (results.find((r: any) => r.platform_data?.url)?.platform_data?.url) ||
             (account ? `https://www.tiktok.com/@${account.username}` : null),
-          // Additional metadata
           is_draft: post.is_draft,
           has_failed_results: results.some((result: any) => !result.success)
         };
       });
+    
+    // Sort: live posts (with views) first by most views, then queued posts by newest
+    transformedPosts.sort((a, b) => {
+      if (a.impressions > 0 && b.impressions === 0) return -1;
+      if (a.impressions === 0 && b.impressions > 0) return 1;
+      if (a.impressions > 0 && b.impressions > 0) return b.impressions - a.impressions;
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
     
     return NextResponse.json({ posts: transformedPosts });
   } catch (error) {

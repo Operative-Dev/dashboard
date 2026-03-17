@@ -17,28 +17,51 @@ export async function GET(request: Request) {
       post.social_accounts.some(accountId => companyAccountIds.includes(accountId))
     );
     
-    const filteredAnalytics = companySlug === 'all' ? analytics : analytics.filter(item => {
-      // Find the account for this analytics item
-      const account = accounts.find(acc => 
-        acc.platform === 'tiktok' // Assuming analytics is mostly TikTok for now
-      );
+    // Build set of known usernames from our accounts (to filter out stray analytics)
+    const knownUsernames = new Set(accounts.map(acc => acc.username.toLowerCase()));
+    
+    // Extract username from TikTok share_url (e.g. https://www.tiktok.com/@username/video/...)
+    const getUsernameFromUrl = (url: string): string | null => {
+      const match = url?.match?.(/tiktok\.com\/@([^/]+)/);
+      return match ? match[1].toLowerCase() : null;
+    };
+    
+    // Filter analytics to only include posts from our known accounts
+    const ownedAnalytics = analytics.filter(item => {
+      const username = getUsernameFromUrl(item.share_url);
+      return username && knownUsernames.has(username);
+    });
+    
+    const filteredAnalytics = companySlug === 'all' ? ownedAnalytics : ownedAnalytics.filter(item => {
+      const username = getUsernameFromUrl(item.share_url);
+      const account = accounts.find(acc => acc.username.toLowerCase() === username);
       return account && companyAccountIds.includes(account.id);
     });
     
     const now = new Date();
-    const today = now.toISOString().split('T')[0];
-    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    // Use PDT (UTC-7) for date calculations to match user's timezone
+    const toLocalDate = (d: Date) => {
+      const local = new Date(d.getTime() - 7 * 60 * 60 * 1000);
+      return local.toISOString().split('T')[0];
+    };
+    const today = toLocalDate(now);
+    const weekAgo = toLocalDate(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000));
     
-    // Calculate stats from filtered data
-    const postsToday = filteredPosts.filter(post => {
-      const postDate = new Date(post.created_at).toISOString().split('T')[0];
+    // Count from analytics directly — each analytics entry = 1 actually-published post on TikTok
+    const postsToday = filteredAnalytics.filter(item => {
+      const postDate = toLocalDate(new Date(item.platform_created_at));
       return postDate === today;
     }).length;
     
-    const postsThisWeek = filteredPosts.filter(post => {
-      const postDate = new Date(post.created_at).toISOString().split('T')[0];
+    const postsThisWeek = filteredAnalytics.filter(item => {
+      const postDate = toLocalDate(new Date(item.platform_created_at));
       return postDate >= weekAgo;
     }).length;
+    
+    const queuedToday = filteredPosts.filter(post => {
+      const postDate = toLocalDate(new Date(post.created_at));
+      return postDate === today;
+    }).length - postsToday;
     
     const totalViews = filteredAnalytics.reduce((sum, item) => sum + (item.view_count || 0), 0);
     
@@ -61,8 +84,8 @@ export async function GET(request: Request) {
     for (let i = days - 1; i >= 0; i--) {
       const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
       const dateStr = date.toISOString().split('T')[0];
-      const count = filteredPosts.filter(post => {
-        const postDate = new Date(post.created_at).toISOString().split('T')[0];
+      const count = filteredAnalytics.filter(item => {
+        const postDate = toLocalDate(new Date(item.platform_created_at));
         return postDate === dateStr;
       }).length;
       postsOverTime.push({ date: dateStr, count });
@@ -95,9 +118,15 @@ export async function GET(request: Request) {
         const companyPosts = posts.filter(post => 
           post.social_accounts.some(accountId => company.postbridgeAccountIds.includes(accountId))
         );
-        const companyPostCount = companyPosts.length;
-        const companyPostsThisWeek = companyPosts.filter(post => {
-          const postDate = new Date(post.created_at).toISOString().split('T')[0];
+        // Count from analytics for this company's accounts
+        const companyAnalytics = ownedAnalytics.filter(item => {
+          const username = getUsernameFromUrl(item.share_url);
+          const account = accounts.find(acc => acc.username.toLowerCase() === username);
+          return account && company.postbridgeAccountIds.includes(account.id);
+        });
+        const companyPostCount = companyAnalytics.length;
+        const companyPostsThisWeek = companyAnalytics.filter(item => {
+          const postDate = toLocalDate(new Date(item.platform_created_at));
           return postDate >= weekAgo;
         }).length;
 
@@ -123,7 +152,10 @@ export async function GET(request: Request) {
         avgEngagementRate: 0, // Will calculate this properly if needed
         activeAccounts,
         successRate: Math.round(successRate * 100) / 100,
-        lowEngagementPosts
+        lowEngagementPosts,
+        queuedToday: Math.max(0, queuedToday),
+        totalQueued: filteredPosts.length - filteredAnalytics.length,
+        totalLive: filteredAnalytics.length,
       },
       charts: {
         postsOverTime,
