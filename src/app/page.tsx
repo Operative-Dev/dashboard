@@ -66,34 +66,46 @@ function DashboardContent() {
   const [charts, setCharts] = useState<ChartData | null>(null);
   const [companySummaries, setCompanySummaries] = useState<CompanySummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [fetchedAt, setFetchedAt] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        // Build API URLs with company parameter
-        const overviewUrl = currentCompany === 'all' ? '/api/overview' : `/api/overview?company=${currentCompany}`;
-        const postsUrl = currentCompany === 'all' ? '/api/posts?limit=20' : `/api/posts?limit=20&company=${currentCompany}`;
-        
-        // Fetch overview stats
-        const overviewRes = await fetch(overviewUrl);
-        const overviewData = await overviewRes.json();
-        setStats(overviewData.stats);
-        setCharts(overviewData.charts);
-        setCompanySummaries(overviewData.companySummaries || []);
-
-        // Fetch recent posts
-        const postsRes = await fetch(postsUrl);
-        const postsData = await postsRes.json();
-        setPosts(postsData.posts);
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-      } finally {
-        setLoading(false);
-      }
+  const fetchData = async (fresh = false) => {
+    try {
+      const freshParam = fresh ? '&fresh=1' : '';
+      const sep = currentCompany === 'all' ? '?' : '&';
+      const overviewUrl = currentCompany === 'all' 
+        ? `/api/overview${fresh ? '?fresh=1' : ''}` 
+        : `/api/overview?company=${currentCompany}${freshParam}`;
+      const postsUrl = currentCompany === 'all' 
+        ? `/api/posts?limit=20${freshParam}` 
+        : `/api/posts?limit=20&company=${currentCompany}${freshParam}`;
+      
+      const [overviewRes, postsRes] = await Promise.all([fetch(overviewUrl), fetch(postsUrl)]);
+      const [overviewData, postsData] = await Promise.all([overviewRes.json(), postsRes.json()]);
+      
+      setStats(overviewData.stats);
+      setCharts(overviewData.charts);
+      setCompanySummaries(overviewData.companySummaries || []);
+      setFetchedAt(overviewData.fetchedAt || new Date().toISOString());
+      setPosts(postsData.posts);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
+  };
 
-    fetchData();
-  }, [currentCompany]);
+  useEffect(() => { fetchData(); }, [currentCompany]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    // Trigger analytics sync first
+    try { await fetch('/api/refresh', { method: 'POST' }); } catch {}
+    // Wait a moment for sync to process
+    await new Promise(r => setTimeout(r, 2000));
+    await fetchData(true);
+  };
 
   const formatNumber = (num: number) => {
     if (num >= 1000000) {
@@ -145,6 +157,23 @@ function DashboardContent() {
   return (
     <DashboardLayout title="Overview">
       <div className="p-4 md:p-8 space-y-8">
+        {/* Refresh bar */}
+        <div className="flex items-center justify-between">
+          <div className="text-xs text-zinc-500 font-mono">
+            {fetchedAt ? `Last refreshed ${new Date(fetchedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}` : ''}
+          </div>
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="flex items-center gap-2 px-3 py-1.5 text-xs font-mono text-zinc-400 bg-zinc-900 border border-zinc-800 rounded-md hover:text-zinc-50 hover:bg-zinc-800/50 transition-colors cursor-pointer disabled:opacity-50"
+          >
+            <svg className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            {refreshing ? 'Syncing...' : 'Refresh'}
+          </button>
+        </div>
+
         {/* Metrics Grid */}
         {stats && (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">

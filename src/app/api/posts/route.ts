@@ -7,9 +7,10 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const limit = searchParams.get('limit');
     const companySlug = searchParams.get('company') || 'all';
+    const fresh = searchParams.get('fresh') === '1';
     const companyAccountIds = getCompanyAccountIds(companySlug);
     
-    const { accounts, posts, analytics, postResults } = await PostBridgeClient.getAllData();
+    const { accounts, posts, analytics, postResults } = await PostBridgeClient.getAllData(fresh);
     
     // Filter posts by company account IDs
     const filteredPosts = companySlug === 'all' ? posts : posts.filter(post => 

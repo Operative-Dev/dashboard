@@ -5,17 +5,21 @@ if (!API_KEY) {
   throw new Error('POSTBRIDGE_API_KEY environment variable is required');
 }
 
-// Simple cache to avoid hammering the API
 const cache = new Map<string, { data: any; timestamp: number }>();
-const CACHE_DURATION = 60 * 1000; // 60 seconds
+const CACHE_DURATION = 60 * 1000;
 
-async function cachedFetch<T>(endpoint: string, cacheKey?: string): Promise<T> {
+export function clearCache() {
+  cache.clear();
+}
+
+async function cachedFetch<T>(endpoint: string, cacheKey?: string, skipCache = false): Promise<T> {
   const key = cacheKey || endpoint;
-  const cached = cache.get(key);
-  const now = Date.now();
-
-  if (cached && (now - cached.timestamp) < CACHE_DURATION) {
-    return cached.data;
+  
+  if (!skipCache) {
+    const cached = cache.get(key);
+    if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
+      return cached.data;
+    }
   }
 
   const response = await fetch(`${BASE_URL}${endpoint}`, {
@@ -30,78 +34,53 @@ async function cachedFetch<T>(endpoint: string, cacheKey?: string): Promise<T> {
   }
 
   const data = await response.json();
-  cache.set(key, { data, timestamp: now });
-  
+  cache.set(key, { data, timestamp: Date.now() });
   return data;
 }
 
-export interface PostBridgeAccount {
-  id: number;
-  platform: string;
-  username: string;
-}
-
-export interface PostBridgePost {
-  id: number;
-  caption: string;
-  status: string;
-  social_accounts: number[];
-  created_at: string;
-  media: any[];
-  is_draft: boolean;
-  platform_configurations: any;
-}
-
-export interface PostBridgeResult {
-  success: boolean;
-  social_account_id: number;
-  error: string | null;
-  platform_data: any;
-}
-
-export interface PostBridgeAnalytics {
-  platform_post_id: string;
-  view_count: number;
-  like_count: number;
-  comment_count: number;
-  share_count: number;
-  share_url: string;
-  video_description: string;
-  platform_created_at: string;
-}
+export interface PostBridgeAccount { id: number; platform: string; username: string; }
+export interface PostBridgePost { id: number; caption: string; status: string; social_accounts: number[]; created_at: string; media: any[]; is_draft: boolean; platform_configurations: any; }
+export interface PostBridgeResult { success: boolean; social_account_id: number; error: string | null; platform_data: any; }
+export interface PostBridgeAnalytics { platform_post_id: string; view_count: number; like_count: number; comment_count: number; share_count: number; share_url: string; video_description: string; platform_created_at: string; }
 
 export class PostBridgeClient {
-  static async getAccounts(): Promise<{ data: PostBridgeAccount[] }> {
-    return cachedFetch('/social-accounts');
+  static async getAccounts(fresh = false): Promise<{ data: PostBridgeAccount[] }> {
+    return cachedFetch('/social-accounts', undefined, fresh);
   }
 
-  static async getPosts(limit = 50): Promise<{ data: PostBridgePost[] }> {
-    return cachedFetch(`/posts?limit=${limit}`);
+  static async getPosts(limit = 50, fresh = false): Promise<{ data: PostBridgePost[] }> {
+    return cachedFetch(`/posts?limit=${limit}`, undefined, fresh);
   }
 
-  static async getPostResults(postId: number): Promise<{ data: PostBridgeResult[] }> {
-    return cachedFetch(`/post-results?post_id=${postId}`, `post-results-${postId}`);
+  static async getPostResults(postId: number, fresh = false): Promise<{ data: PostBridgeResult[] }> {
+    return cachedFetch(`/post-results?post_id=${postId}`, `post-results-${postId}`, fresh);
   }
 
-  static async getAnalytics(platform = 'tiktok', timeframe = '30d', limit = 50): Promise<{ data: PostBridgeAnalytics[] }> {
-    return cachedFetch(`/analytics?platform=${platform}&timeframe=${timeframe}&limit=${limit}`, `analytics-${platform}-${timeframe}-${limit}`);
+  static async getAnalytics(platform = 'tiktok', timeframe = '30d', limit = 50, fresh = false): Promise<{ data: PostBridgeAnalytics[] }> {
+    return cachedFetch(`/analytics?platform=${platform}&timeframe=${timeframe}&limit=${limit}`, `analytics-${platform}-${timeframe}-${limit}`, fresh);
   }
 
-  // Helper method to get all data needed for the dashboard
-  static async getAllData() {
+  static async syncAnalytics(): Promise<any> {
+    const response = await fetch(`${BASE_URL}/analytics/sync`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ platform: 'tiktok' }),
+    });
+    return response.json();
+  }
+
+  static async getAllData(fresh = false) {
     const [accountsData, postsData, analyticsData] = await Promise.all([
-      this.getAccounts(),
-      this.getPosts(50),
-      this.getAnalytics('tiktok', '30d', 50)
+      this.getAccounts(fresh),
+      this.getPosts(50, fresh),
+      this.getAnalytics('tiktok', '30d', 50, fresh)
     ]);
 
-    // Also fetch results for all posts
-    const postResultsPromises = postsData.data.map(post => 
-      this.getPostResults(post.id).catch(() => ({ data: [] }))
+    const postResultsPromises = postsData.data.map(post =>
+      this.getPostResults(post.id, fresh).catch(() => ({ data: [] }))
     );
     const postResults = await Promise.all(postResultsPromises);
 
-    // Create a map of post ID to results
     const resultsMap = new Map();
     postsData.data.forEach((post, index) => {
       resultsMap.set(post.id, postResults[index].data);
@@ -111,7 +90,8 @@ export class PostBridgeClient {
       accounts: accountsData.data,
       posts: postsData.data,
       analytics: analyticsData.data,
-      postResults: resultsMap
+      postResults: resultsMap,
+      fetchedAt: new Date().toISOString(),
     };
   }
 }
