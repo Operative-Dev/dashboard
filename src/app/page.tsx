@@ -24,7 +24,7 @@ interface OverviewStats {
   postsThisWeek: number;
   totalImpressions: number;
   avgEngagementRate: number;
-  activeClients: number;
+  activeAccounts: number;
   successRate: number;
   lowEngagementPosts: number;
 }
@@ -73,7 +73,6 @@ function DashboardContent() {
   const fetchData = async (fresh = false) => {
     try {
       const freshParam = fresh ? '&fresh=1' : '';
-      const sep = currentCompany === 'all' ? '?' : '&';
       const overviewUrl = currentCompany === 'all' 
         ? `/api/overview?days=${timePeriod}${fresh ? '&fresh=1' : ''}` 
         : `/api/overview?company=${currentCompany}&days=${timePeriod}${freshParam}`;
@@ -87,7 +86,7 @@ function DashboardContent() {
       setStats(overviewData.stats);
       setCharts(overviewData.charts);
       setCompanySummaries(overviewData.companySummaries || []);
-      setFetchedAt(overviewData.fetchedAt || new Date().toISOString());
+      setFetchedAt(new Date().toISOString()); // Use actual fetch time, not cached time
       setPosts(postsData.posts);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -97,14 +96,21 @@ function DashboardContent() {
     }
   };
 
-  useEffect(() => { fetchData(); }, [currentCompany, timePeriod]);
+  // Auto-sync on first load and when company/period changes
+  useEffect(() => {
+    const syncAndFetch = async () => {
+      try { await fetch('/api/refresh', { method: 'POST' }); } catch {}
+      await fetchData(true);
+    };
+    syncAndFetch();
+  }, [currentCompany, timePeriod]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
     // Trigger analytics sync first
     try { await fetch('/api/refresh', { method: 'POST' }); } catch {}
-    // Wait a moment for sync to process
-    await new Promise(r => setTimeout(r, 2000));
+    // Wait for TikTok data to propagate
+    await new Promise(r => setTimeout(r, 3000));
     await fetchData(true);
   };
 
@@ -159,19 +165,26 @@ function DashboardContent() {
     <DashboardLayout title="Overview">
       <div className="p-4 md:p-8 space-y-8">
         {/* Refresh bar */}
-        <div className="flex items-center justify-between">
-          <div className="text-xs text-zinc-500 font-mono">
-            {fetchedAt ? `Last refreshed ${new Date(fetchedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}` : ''}
+        <div className="flex items-center justify-between bg-zinc-900/50 border border-zinc-800 rounded-md px-4 py-2">
+          <div className="flex items-center gap-2 text-xs text-zinc-500 font-mono">
+            <div className={`w-1.5 h-1.5 rounded-full ${refreshing ? 'bg-amber-400 animate-pulse' : 'bg-emerald-500'}`} />
+            {fetchedAt ? (
+              <>
+                <span>Live data</span>
+                <span className="text-zinc-600">·</span>
+                <span>synced {new Date(fetchedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+              </>
+            ) : 'Loading...'}
           </div>
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            className="flex items-center gap-2 px-3 py-1.5 text-xs font-mono text-zinc-400 bg-zinc-900 border border-zinc-800 rounded-md hover:text-zinc-50 hover:bg-zinc-800/50 transition-colors cursor-pointer disabled:opacity-50"
+            className="flex items-center gap-2 px-3 py-1.5 text-xs font-mono text-zinc-400 border border-zinc-700 rounded-md hover:text-zinc-50 hover:bg-zinc-800 transition-colors cursor-pointer disabled:opacity-50"
           >
             <svg className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
-            {refreshing ? 'Syncing...' : 'Refresh'}
+            {refreshing ? 'Syncing from TikTok...' : 'Sync Now'}
           </button>
         </div>
 
@@ -201,7 +214,7 @@ function DashboardContent() {
             />
             <MetricCard
               title="Active Accounts"
-              value={stats.activeClients}
+              value={stats.activeAccounts}
               subtitle="Posting regularly"
               icon={Users}
               changeType="positive"
