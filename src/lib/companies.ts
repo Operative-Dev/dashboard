@@ -24,11 +24,11 @@ export const companies: Company[] = [
     id: 'novi',
     name: 'Novi',
     slug: 'novi',
-    postbridgeAccountIds: [], // not on PostBridge yet
-    postbridgeApiKey: '',
+    postbridgeAccountIds: [],
+    postbridgeApiKey: 'pb_live_Paed5uuR1qdGnYux2qoXty',
     platforms: ['tiktok', 'instagram'],
     color: '#3b82f6', // blue
-    status: 'onboarding',
+    status: 'active',
   },
   {
     id: 'thoughtful',
