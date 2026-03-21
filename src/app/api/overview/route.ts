@@ -79,11 +79,11 @@ export async function GET(request: Request) {
       : new Set(filteredPosts.map(post => post.social_accounts[0]).filter(id => companyAccountIds.includes(id)));
     const activeAccounts = filteredAccountIds.size;
     
-    // Posts over time - filtered
+    // Posts over time - filtered (use PST dates for both labels and comparison)
     const postsOverTime = [];
     for (let i = days - 1; i >= 0; i--) {
       const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-      const dateStr = date.toISOString().split('T')[0];
+      const dateStr = toLocalDate(date);
       const count = filteredAnalytics.filter(item => {
         const postDate = toLocalDate(new Date(item.platform_created_at));
         return postDate === dateStr;
@@ -91,13 +91,13 @@ export async function GET(request: Request) {
       postsOverTime.push({ date: dateStr, count });
     }
     
-    // Views over time - filtered analytics
+    // Views over time - filtered analytics (use PST dates)
     const viewsOverTime = [];
     for (let i = days - 1; i >= 0; i--) {
       const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-      const dateStr = date.toISOString().split('T')[0];
+      const dateStr = toLocalDate(date);
       const views = filteredAnalytics.filter(item => {
-        const analyticsDate = new Date(item.platform_created_at).toISOString().split('T')[0];
+        const analyticsDate = toLocalDate(new Date(item.platform_created_at));
         return analyticsDate === dateStr;
       }).reduce((sum, item) => sum + (item.view_count || 0), 0);
       viewsOverTime.push({ date: dateStr, impressions: views });
