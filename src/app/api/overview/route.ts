@@ -91,16 +91,21 @@ export async function GET(request: Request) {
       : new Set(filteredPosts.map(post => post.social_accounts[0]).filter(id => companyAccountIds.includes(id)));
     const activeAccounts = filteredAccountIds.size;
     
-    // Posts over time - filtered (use PST dates for both labels and comparison)
+    // Posts over time - use BOTH analytics and posts, take the higher count per day
+    // (analytics lags behind for newly published posts)
     const postsOverTime = [];
     for (let i = days - 1; i >= 0; i--) {
       const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
       const dateStr = toLocalDate(date);
-      const count = filteredAnalytics.filter(item => {
+      const analyticsCount = filteredAnalytics.filter(item => {
         const postDate = toLocalDate(new Date(item.platform_created_at));
         return postDate === dateStr;
       }).length;
-      postsOverTime.push({ date: dateStr, count });
+      const postsCount = filteredPosts.filter(post => {
+        const postDate = toLocalDate(new Date(post.created_at));
+        return postDate === dateStr;
+      }).length;
+      postsOverTime.push({ date: dateStr, count: Math.max(analyticsCount, postsCount) });
     }
     
     // Views over time - filtered analytics (use PST dates)
