@@ -144,11 +144,16 @@ export async function GET(request: Request) {
           const account = accounts.find(acc => acc.username.toLowerCase() === username);
           return account && company.postbridgeAccountIds.includes(account.id);
         });
-        const companyPostCount = companyAnalytics.length;
-        const companyPostsThisWeek = companyAnalytics.filter(item => {
+        const companyPostCount = Math.max(companyAnalytics.length, companyPosts.length);
+        const companyPostsThisWeekAnalytics = companyAnalytics.filter(item => {
           const postDate = toLocalDate(new Date(item.platform_created_at));
           return postDate >= weekAgo;
         }).length;
+        const companyPostsThisWeekPosts = companyPosts.filter(post => {
+          const postDate = toLocalDate(new Date(post.created_at));
+          return postDate >= weekAgo;
+        }).length;
+        const companyPostsThisWeek = Math.max(companyPostsThisWeekAnalytics, companyPostsThisWeekPosts);
 
         return {
           id: company.id,

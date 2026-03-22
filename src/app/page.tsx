@@ -130,8 +130,8 @@ function DashboardContent() {
         ? `/api/overview?days=${timePeriod}${fresh ? '&fresh=1' : ''}` 
         : `/api/overview?company=${currentCompany}&days=${timePeriod}${freshParam}`;
       const postsUrl = currentCompany === 'all' 
-        ? `/api/posts?limit=20${freshParam}` 
-        : `/api/posts?limit=20&company=${currentCompany}${freshParam}`;
+        ? `/api/posts?limit=50${freshParam}` 
+        : `/api/posts?limit=50&company=${currentCompany}${freshParam}`;
       
       const [overviewRes, postsRes] = await Promise.all([fetch(overviewUrl), fetch(postsUrl)]);
       const [overviewData, postsData] = await Promise.all([overviewRes.json(), postsRes.json()]);
