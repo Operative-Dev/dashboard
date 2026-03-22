@@ -47,21 +47,33 @@ export async function GET(request: Request) {
     const today = toLocalDate(now);
     const weekAgo = toLocalDate(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000));
     
-    // Count from analytics directly — each analytics entry = 1 actually-published post on TikTok
-    const postsToday = filteredAnalytics.filter(item => {
+    // Count posts today from both analytics AND posts (analytics may lag behind for new posts)
+    const analyticsToday = filteredAnalytics.filter(item => {
       const postDate = toLocalDate(new Date(item.platform_created_at));
       return postDate === today;
     }).length;
     
-    const postsThisWeek = filteredAnalytics.filter(item => {
+    const postedPostsToday = filteredPosts.filter(post => {
+      const postDate = toLocalDate(new Date(post.created_at));
+      return postDate === today;
+    }).length;
+    
+    // Use the higher of analytics vs posts count (analytics lags for newly published posts)
+    const postsToday = Math.max(analyticsToday, postedPostsToday);
+    
+    const analyticsThisWeek = filteredAnalytics.filter(item => {
       const postDate = toLocalDate(new Date(item.platform_created_at));
       return postDate >= weekAgo;
     }).length;
     
-    const queuedToday = filteredPosts.filter(post => {
+    const postedPostsThisWeek = filteredPosts.filter(post => {
       const postDate = toLocalDate(new Date(post.created_at));
-      return postDate === today;
-    }).length - postsToday;
+      return postDate >= weekAgo;
+    }).length;
+    
+    const postsThisWeek = Math.max(analyticsThisWeek, postedPostsThisWeek);
+    
+    const queuedToday = Math.max(0, postedPostsToday - analyticsToday);
     
     const totalViews = filteredAnalytics.reduce((sum, item) => sum + (item.view_count || 0), 0);
     
