@@ -28,6 +28,7 @@ interface OverviewStats {
   avgEngagementRate: number;
   activeAccounts: number;
   successRate: number;
+  viewsToday: number;
   lowEngagementPosts: number;
   queuedToday: number;
   totalQueued: number;
@@ -283,9 +284,9 @@ function DashboardContent() {
               changeType="positive"
             />
             <MetricCard
-              title="Total Views"
-              value={formatNumber(stats.totalImpressions)}
-              subtitle={currentCompany === 'all' ? 'Across all platforms' : `For ${getCompanyBySlug(currentCompany)?.name}`}
+              title="Views Today"
+              value={stats.viewsToday > 0 ? formatNumber(stats.viewsToday) : '—'}
+              subtitle={stats.viewsToday > 0 ? 'Delta from yesterday' : 'Need 2+ days of snapshots'}
               icon={Eye}
               changeType="positive"
             />
@@ -513,7 +514,7 @@ function DashboardContent() {
           {charts?.impressionsOverTime && (
             <div className="bg-zinc-900 border border-zinc-800 p-4 sm:p-6 rounded-md">
               <h3 className="text-lg font-semibold text-zinc-50 mb-4" style={{ fontFamily: 'var(--font-display)' }}>
-                Views ({timePeriod}d)
+                Cumulative Views ({timePeriod}d)
               </h3>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">

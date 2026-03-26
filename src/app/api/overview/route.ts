@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { PostBridgeClient } from '@/lib/postbridge';
 import { getCompanyAccountIds, companies, getCompanyBySlug } from '@/lib/companies';
+import { supabaseAdmin } from '@/lib/supabase';
 
 export async function GET(request: Request) {
   try {
@@ -120,6 +121,77 @@ export async function GET(request: Request) {
       viewsOverTime.push({ date: dateStr, impressions: views });
     }
     
+    // --- Supabase daily_analytics overlay ---
+    let viewsToday = 0;
+    let supabaseViewsOverTime: { date: string; impressions: number }[] | null = null;
+    try {
+      const startDate = toLocalDate(new Date(now.getTime() - (days - 1) * 24 * 60 * 60 * 1000));
+      const endDate = today;
+      
+      let daQuery = supabaseAdmin.from('daily_analytics')
+        .select('date, client, total_views')
+        .gte('date', startDate)
+        .lte('date', endDate)
+        .order('date', { ascending: true });
+      
+      if (companySlug !== 'all') {
+        daQuery = daQuery.eq('client', companySlug);
+      }
+      
+      const { data: dailyRows, error } = await daQuery;
+      
+      if (!error && dailyRows && dailyRows.length > 0) {
+        // Aggregate by date
+        const byDate = new Map<string, number>();
+        for (const row of dailyRows) {
+          byDate.set(row.date, (byDate.get(row.date) || 0) + (row.total_views || 0));
+        }
+        
+        // Build the chart data - show cumulative views per day from daily_analytics
+        supabaseViewsOverTime = [];
+        for (let i = days - 1; i >= 0; i--) {
+          const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+          const dateStr = toLocalDate(date);
+          supabaseViewsOverTime.push({ date: dateStr, impressions: byDate.get(dateStr) || 0 });
+        }
+        
+        // Views today = today's total_views minus yesterday's total_views (delta)
+        const todayViews = byDate.get(today) || 0;
+        const yesterday = toLocalDate(new Date(now.getTime() - 24 * 60 * 60 * 1000));
+        
+        // For delta, check if we have yesterday's snapshot
+        let yQuery = supabaseAdmin.from('daily_analytics')
+          .select('total_views')
+          .eq('date', yesterday);
+        if (companySlug !== 'all') yQuery = yQuery.eq('client', companySlug);
+        const { data: yRows } = await yQuery;
+        const yesterdayViews = yRows?.reduce((s, r) => s + (r.total_views || 0), 0) || 0;
+        
+        // If we only have one day of data, viewsToday = 0 (can't compute delta yet)
+        viewsToday = yesterdayViews > 0 ? Math.max(0, todayViews - yesterdayViews) : 0;
+      }
+    } catch (e) {
+      console.error('Supabase daily_analytics fetch error:', e);
+      // Fall back to PostBridge-only data
+    }
+
+    // Use Supabase total views as source of truth (more accurate than PostBridge analytics cache)
+    let supabaseTotalViews: number | null = null;
+    try {
+      let tvQuery = supabaseAdmin.from('daily_analytics')
+        .select('total_views');
+      if (companySlug !== 'all') {
+        tvQuery = tvQuery.eq('client', companySlug);
+      }
+      // Get latest date's data for total views
+      const { data: tvRows } = await tvQuery;
+      if (tvRows && tvRows.length > 0) {
+        supabaseTotalViews = tvRows.reduce((s: number, r: any) => s + (r.total_views || 0), 0);
+      }
+    } catch (e) {
+      console.error('Supabase total views fetch error:', e);
+    }
+
     // Count posts with low engagement - filtered
     const lowEngagementPosts = filteredAnalytics.filter(item => {
       const engagementRate = item.view_count > 0 
@@ -173,8 +245,10 @@ export async function GET(request: Request) {
       stats: {
         postsToday,
         postsThisWeek,
-        totalImpressions: totalViews, // Keep field name for compatibility, but it's actually views
-        avgEngagementRate: 0, // Will calculate this properly if needed
+        totalImpressions: supabaseTotalViews ?? totalViews,
+        totalImpressionsIsAllTime: true,
+        viewsToday,
+        avgEngagementRate: 0,
         activeAccounts,
         successRate: Math.round(successRate * 100) / 100,
         lowEngagementPosts,
@@ -184,7 +258,7 @@ export async function GET(request: Request) {
       },
       charts: {
         postsOverTime,
-        impressionsOverTime: viewsOverTime
+        impressionsOverTime: supabaseViewsOverTime || viewsOverTime
       },
       companySummaries,
       fetchedAt,

@@ -3,13 +3,14 @@
 import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { usePathname, useSearchParams, useRouter } from 'next/navigation'
-import { LayoutDashboard, FileText, AlertTriangle, Menu, X } from 'lucide-react'
+import { LayoutDashboard, FileText, AlertTriangle, Activity, Menu, X } from 'lucide-react'
 import { companies } from '@/lib/companies'
 
 const navItems = [
   { href: '/', label: 'Overview', icon: <LayoutDashboard className="w-4 h-4" /> },
   { href: '/posts', label: 'Posts', icon: <FileText className="w-4 h-4" /> },
   { href: '/needs-attention', label: 'Needs Attention', icon: <AlertTriangle className="w-4 h-4" /> },
+  { href: '/events', label: 'Event Feed', icon: <Activity className="w-4 h-4" /> },
 ]
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {

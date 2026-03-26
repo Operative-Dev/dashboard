@@ -5,7 +5,7 @@ const BASE_URL = 'https://api.post-bridge.com/v1';
 // In-memory cache — survives across requests within the same serverless instance
 // Works on both local dev and Netlify/Vercel (no filesystem needed)
 const memoryCache = new Map<string, { data: CachedData; timestamp: number }>();
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes — auto-refresh after this
+const CACHE_TTL = 15 * 60 * 1000; // 15 minutes — manual refresh via Sync Now button
 
 interface CachedData {
   accounts: PostBridgeAccount[];
@@ -76,17 +76,21 @@ async function syncCompanyData(company: Company): Promise<CachedData> {
   const apiKey = company.postbridgeApiKey;
   if (!apiKey) throw new Error(`No API key for ${company.slug}`);
 
+  // Fetch accounts, posts, and analytics in parallel
+  // Skip post-results on initial load — they're only used for success rate calculation
+  // and add massive latency (1 API call per post)
   const [accounts, posts, analytics] = await Promise.all([
     fetchAll<PostBridgeAccount>('/social-accounts', apiKey),
     fetchAll<PostBridgePost>('/posts', apiKey),
     fetchAll<PostBridgeAnalytics>('/analytics?platform=tiktok&timeframe=all', apiKey),
   ]);
 
-  // Fetch post results in batches
+  // Only fetch post results for recent posts (last 50) to keep load times fast
   const resultsObj: Record<string, PostBridgeResult[]> = {};
-  const batchSize = 10;
-  for (let i = 0; i < posts.length; i += batchSize) {
-    const batch = posts.slice(i, i + batchSize);
+  const recentPosts = posts.slice(0, 50);
+  const batchSize = 25;
+  for (let i = 0; i < recentPosts.length; i += batchSize) {
+    const batch = recentPosts.slice(i, i + batchSize);
     const results = await Promise.all(
       batch.map(post =>
         apiFetch<{ data: PostBridgeResult[] }>(`/post-results?post_id=${post.id}`, apiKey)
