@@ -22,7 +22,7 @@ const PB_BASE = 'https://api.post-bridge.com/v1';
 const companies = [
   { slug: 'woz', name: 'Woz', apiKey: 'pb_live_3xh1Ms7WDVTy3XG7f1wdDk', accountIds: [47791, 47792, 47793, 47796, 47852] },
   { slug: 'novi', name: 'Novi', apiKey: 'pb_live_Paed5uuR1qdGnYux2qoXty', accountIds: [50441, 50442, 51056, 51057, 51058] },
-  { slug: 'thoughtful', name: 'Thoughtful', apiKey: 'pb_live_JyMJsnUzEW8DzGpeSrYuk1', accountIds: [50426, 50430, 51812, 51813] },
+  { slug: 'thoughtful', name: 'Thoughtful', apiKey: 'pb_live_JyMJsnUzEW8DzGpeSrYuk1', accountIds: [52269, 50430, 51812, 52268] },
 ];
 
 async function fetchAll(endpoint, apiKey) {
