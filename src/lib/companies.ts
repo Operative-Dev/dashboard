@@ -44,9 +44,9 @@ export const companies: Company[] = [
     id: 'landtrust',
     name: 'LandTrust',
     slug: 'landtrust',
-    postbridgeAccountIds: [], // TBD — awaiting account creation
-    postbridgeApiKey: '', // TBD — needs PostBridge onboarding
-    platforms: ['tiktok'],
+    postbridgeAccountIds: [52784, 52785, 52786], // @senditoutdoors22 — tiktok, instagram, youtube
+    postbridgeApiKey: 'pb_live_FmhcTL43yqcqWmMGNTw85f',
+    platforms: ['tiktok', 'instagram', 'youtube'],
     color: '#16a34a', // green (outdoors)
     status: 'onboarding',
   },
@@ -54,9 +54,9 @@ export const companies: Company[] = [
     id: 'hoot',
     name: 'Hoot',
     slug: 'hoot',
-    postbridgeAccountIds: [], // TBD — awaiting account creation
-    postbridgeApiKey: '', // TBD — needs PostBridge onboarding
-    platforms: ['tiktok'],
+    postbridgeAccountIds: [52787, 52788, 52789], // @snackit73 — tiktok, instagram, youtube
+    postbridgeApiKey: 'pb_live_FmhcTL43yqcqWmMGNTw85f',
+    platforms: ['tiktok', 'instagram', 'youtube'],
     color: '#8b5cf6', // violet
     status: 'onboarding',
   },
