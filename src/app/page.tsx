@@ -19,7 +19,7 @@ import {
   ChevronDown,
   ChevronRight
 } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
+import { LineChart, Line, BarChart as RechartsBarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 
 interface OverviewStats {
   postsToday: number;
@@ -61,6 +61,7 @@ interface Post {
 interface ChartData {
   postsOverTime: Array<{ date: string; count: number }>;
   impressionsOverTime: Array<{ date: string; impressions: number }>;
+  dailyViewsOverTime: Array<{ date: string; views: number }>;
 }
 
 interface CompanySummary {
@@ -548,6 +549,47 @@ function DashboardContent() {
                       dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
                     />
                   </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
+
+          {/* Daily Views */}
+          {charts?.dailyViewsOverTime && charts.dailyViewsOverTime.some(d => d.views > 0) && (
+            <div className="bg-zinc-900 border border-zinc-800 p-4 sm:p-6 rounded-md">
+              <h3 className="text-lg font-semibold text-zinc-50 mb-4" style={{ fontFamily: 'var(--font-display)' }}>
+                Daily Views ({timePeriod}d)
+              </h3>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RechartsBarChart data={charts.dailyViewsOverTime}>
+                    <XAxis 
+                      dataKey="date" 
+                      tick={{ fill: '#71717a', fontSize: 12 }}
+                      axisLine={{ stroke: '#27272a' }}
+                      tickLine={false}
+                    />
+                    <YAxis 
+                      tick={{ fill: '#71717a', fontSize: 12 }}
+                      axisLine={{ stroke: '#27272a' }}
+                      tickLine={false}
+                      tickFormatter={formatNumber}
+                    />
+                    <Tooltip 
+                      contentStyle={{
+                        backgroundColor: '#18181b',
+                        border: '1px solid #27272a',
+                        borderRadius: '6px',
+                        color: '#fafafa'
+                      }}
+                      formatter={(value) => [formatNumber(Number(value)), 'Views']}
+                    />
+                    <Bar 
+                      dataKey="views" 
+                      fill="#3b82f6"
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </RechartsBarChart>
                 </ResponsiveContainer>
               </div>
             </div>

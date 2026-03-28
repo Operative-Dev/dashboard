@@ -259,7 +259,15 @@ export async function GET(request: Request) {
       },
       charts: {
         postsOverTime,
-        impressionsOverTime: supabaseViewsOverTime || viewsOverTime
+        impressionsOverTime: supabaseViewsOverTime || viewsOverTime,
+        dailyViewsOverTime: (() => {
+          const cumulative = supabaseViewsOverTime || viewsOverTime;
+          if (!cumulative || cumulative.length === 0) return [];
+          return cumulative.map((point, i) => ({
+            date: point.date,
+            views: i === 0 ? 0 : Math.max(0, point.impressions - cumulative[i - 1].impressions),
+          }));
+        })(),
       },
       companySummaries,
       fetchedAt,
