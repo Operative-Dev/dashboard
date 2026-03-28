@@ -64,9 +64,9 @@ export const companies: Company[] = [
     id: 'hexbook',
     name: 'HexBook',
     slug: 'hexbook',
-    postbridgeAccountIds: [], // TBD — awaiting account creation
-    postbridgeApiKey: '', // TBD — needs PostBridge onboarding
-    platforms: ['tiktok'],
+    postbridgeAccountIds: [52799, 52798], // @nychomeparty — tiktok, instagram
+    postbridgeApiKey: 'pb_live_FmhcTL43yqcqWmMGNTw85f',
+    platforms: ['tiktok', 'instagram'],
     color: '#ef4444', // red (party/cocktails)
     status: 'onboarding',
   },
