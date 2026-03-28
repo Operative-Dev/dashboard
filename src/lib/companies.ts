@@ -40,6 +40,36 @@ export const companies: Company[] = [
     color: '#f59e0b', // amber
     status: 'active',
   },
+  {
+    id: 'landtrust',
+    name: 'LandTrust',
+    slug: 'landtrust',
+    postbridgeAccountIds: [], // TBD — awaiting account creation
+    postbridgeApiKey: '', // TBD — needs PostBridge onboarding
+    platforms: ['tiktok'],
+    color: '#16a34a', // green (outdoors)
+    status: 'onboarding',
+  },
+  {
+    id: 'hoot',
+    name: 'Hoot',
+    slug: 'hoot',
+    postbridgeAccountIds: [], // TBD — awaiting account creation
+    postbridgeApiKey: '', // TBD — needs PostBridge onboarding
+    platforms: ['tiktok'],
+    color: '#8b5cf6', // violet
+    status: 'onboarding',
+  },
+  {
+    id: 'hexbook',
+    name: 'HexBook',
+    slug: 'hexbook',
+    postbridgeAccountIds: [], // TBD — awaiting account creation
+    postbridgeApiKey: '', // TBD — needs PostBridge onboarding
+    platforms: ['tiktok'],
+    color: '#ef4444', // red (party/cocktails)
+    status: 'onboarding',
+  },
 ];
 
 export function getCompanyBySlug(slug: string): Company | null {
