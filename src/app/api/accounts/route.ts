@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { PostBridgeClient, PostBridgeAccount, PostBridgeAnalytics } from '@/lib/postbridge';
 import { getCompanyBySlug, getCompanyAccountIds, companies } from '@/lib/companies';
