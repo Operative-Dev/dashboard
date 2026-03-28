@@ -265,7 +265,8 @@ export async function GET(request: Request) {
           if (!cumulative || cumulative.length === 0) return [];
           return cumulative.map((point, i) => ({
             date: point.date,
-            views: i === 0 ? 0 : Math.max(0, point.impressions - cumulative[i - 1].impressions),
+            // First day with data OR previous day had no data = show 0 (can't compute real delta)
+            views: (i === 0 || cumulative[i - 1].impressions === 0) ? 0 : Math.max(0, point.impressions - cumulative[i - 1].impressions),
           }));
         })(),
       },
